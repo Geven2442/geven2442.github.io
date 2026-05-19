@@ -3,581 +3,270 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>互動藝術專題：數位光影漣漪 (豪華進階版)</title>
+    <title>尼好！</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        * {
+        :root {
+            --primary-color: #ffb7b2;
+            --secondary-color: #ff9a9e;
+            --text-color: #333;
+            --bg-color: #fdfbfb;
+        }
+
+        body {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-        }
-        body, html {
-            width: 100%;
-            height: 100%;
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, var(--bg-color) 0%, #ebedee 100%);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
             overflow: hidden;
-            background-color: #050508;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            touch-action: none; /* 防止手機瀏覽器滑動網頁 */
+            text-align: center;
         }
-        canvas {
-            display: block;
+
+        .container {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 3rem 4rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 1s ease-out;
+            max-width: 90%;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin: 0;
+            background: linear-gradient(to right, var(--secondary-color), var(--primary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: pulse 2s infinite;
+        }
+
+        p {
+            font-size: 1.2rem;
+            color: #666;
+            margin-top: 1rem;
+            line-height: 1.6;
+        }
+
+        .btn {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(to right, var(--secondary-color), var(--primary-color));
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 154, 158, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 154, 158, 0.6);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .time-container {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 183, 178, 0.3);
+            display: inline-block;
+        }
+
+        .date-display {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 0.3rem;
+            letter-spacing: 1px;
+        }
+
+        .time-display {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+            font-variant-numeric: tabular-nums; /* 讓數字等寬，避免時間跳動時寬度改變 */
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .circles {
             position: absolute;
             top: 0;
             left: 0;
-            z-index: 1;
-        }
-        /* 控制面板的玻璃擬物設計 (Glassmorphism) */
-        #control-panel {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 10;
-            background: rgba(15, 15, 20, 0.65);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 20px;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            width: 280px;
-            transition: transform 0.3s ease;
-        }
-        #control-panel h1 {
-            font-size: 18px;
-            margin-bottom: 15px;
-            background: linear-gradient(90deg, #00ffcc, #0088ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .control-group {
-            margin-bottom: 12px;
-            display: flex;
-            flex-direction: column;
-        }
-        label {
-            font-size: 12px;
-            color: #aaa;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        select, button {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            outline: none;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        select:hover, button:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-        option {
-            background: #111;
-            color: white;
-        }
-        button.action-btn {
-            background: linear-gradient(135deg, #00ffcc 0%, #0088ff 100%);
-            border: none;
-            color: #000;
-            font-weight: 600;
-            margin-top: 10px;
-        }
-        button.action-btn:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
-        .instructions {
-            font-size: 12px;
-            color: #888;
-            margin-top: 15px;
-            line-height: 1.6;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            padding-top: 10px;
-        }
-        /* 隱藏 UI 按鈕 */
-        #toggle-ui {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 10;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
         }
 
-        /* AI 解讀結果彈出視窗 */
-        #ai-modal {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.9);
-            background: rgba(15, 15, 20, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            padding: 30px;
-            border-radius: 20px;
-            border: 1px solid rgba(0, 255, 204, 0.3);
-            color: white;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 255, 204, 0.1);
-            width: 90%;
-            max-width: 400px;
-            z-index: 100;
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            text-align: center;
+        .circles li {
+            position: absolute;
+            display: block;
+            list-style: none;
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 183, 178, 0.2);
+            animation: float 25s linear infinite;
+            bottom: -150px;
+            border-radius: 50%;
         }
-        #ai-modal.show {
-            opacity: 1;
-            pointer-events: auto;
-            transform: translate(-50%, -50%) scale(1);
+
+        /* 分別設定不同圓圈的大小與動畫延遲 */
+        .circles li:nth-child(1) { left: 25%; width: 80px; height: 80px; animation-delay: 0s; }
+        .circles li:nth-child(2) { left: 10%; width: 20px; height: 20px; animation-delay: 2s; animation-duration: 12s; }
+        .circles li:nth-child(3) { left: 70%; width: 20px; height: 20px; animation-delay: 4s; }
+        .circles li:nth-child(4) { left: 40%; width: 60px; height: 60px; animation-delay: 0s; animation-duration: 18s; }
+        .circles li:nth-child(5) { left: 65%; width: 20px; height: 20px; animation-delay: 0s; }
+        .circles li:nth-child(6) { left: 75%; width: 110px; height: 110px; animation-delay: 3s; }
+        .circles li:nth-child(7) { left: 35%; width: 150px; height: 150px; animation-delay: 7s; }
+        .circles li:nth-child(8) { left: 50%; width: 25px; height: 25px; animation-delay: 15s; animation-duration: 45s; }
+        .circles li:nth-child(9) { left: 20%; width: 15px; height: 15px; animation-delay: 2s; animation-duration: 35s; }
+        .circles li:nth-child(10) { left: 85%; width: 150px; height: 150px; animation-delay: 0s; animation-duration: 11s; }
+
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; border-radius: 0; }
+            100% { transform: translateY(-1000px) rotate(720deg); opacity: 0; border-radius: 50%; }
         }
-        #ai-modal h2 {
-            font-size: 22px;
-            margin-bottom: 15px;
-            background: linear-gradient(90deg, #00ffcc, #ff00ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        
+        /* 隱藏的驚喜訊息容器 */
+        #message-box {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: #fff0f0;
+            border: 1px solid #ffd0d0;
+            color: #d85a5a;
+            animation: fadeIn 0.5s ease-out;
         }
-        #ai-modal p {
-            font-size: 15px;
-            line-height: 1.6;
-            color: #ddd;
-            margin-bottom: 20px;
-            text-align: justify;
-        }
-        #ai-modal .close-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 8px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        #ai-modal .close-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-        button.ai-btn {
-            background: linear-gradient(135deg, #7b2cbf 0%, #c77dff 100%);
-            border: none;
-            color: #fff;
-            font-weight: 600;
-            margin-top: 10px;
-            position: relative;
-            overflow: hidden;
-        }
-        button.ai-btn:hover {
-            box-shadow: 0 0 15px rgba(199, 125, 255, 0.5);
-        }
-        button.ai-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            box-shadow: none;
+
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            h1 { font-size: 3rem; }
+            .container { padding: 2rem; }
         }
     </style>
 </head>
 <body>
 
-    <!-- 控制面板 -->
-    <div id="control-panel">
-        <h1>✨ 數位藝術畫板</h1>
+    <ul class="circles">
+        <li></li><li></li><li></li><li></li><li></li>
+        <li></li><li></li><li></li><li></li><li></li>
+    </ul>
+
+    <div class="container">
+        <h1>尼好！</h1>
+        <p>很高興遇見你！<br>這是一個為你準備的小小問候網頁。</p>
         
-        <div class="control-group">
-            <label for="mode-select">畫筆模式 (Mode)</label>
-            <select id="mode-select">
-                <option value="gravity">🌊 經典重力漣漪</option>
-                <option value="orbit">🌌 星雲引力旋轉</option>
-                <option value="constellation">✨ 星象神經連結</option>
-            </select>
+        <div class="time-container">
+            <div class="date-display" id="date-display">正在載入日期...</div>
+            <div class="time-display" id="time-display">00:00:00</div>
         </div>
+        <br>
 
-        <div class="control-group">
-            <label for="theme-select">色彩主題 (Theme)</label>
-            <select id="theme-select">
-                <option value="neon">🌈 霓虹光譜 (Neon)</option>
-                <option value="fire">🔥 烈焰火花 (Fire)</option>
-                <option value="ocean">🌊 深海波光 (Ocean)</option>
-            </select>
-        </div>
-
-        <div class="control-group">
-            <label for="trail-select">殘影保留 (Trail)</label>
-            <select id="trail-select">
-                <option value="0.15">🌊 動態水波 (短暫)</option>
-                <option value="0.02">☄️ 彗星尾巴 (延長)</option>
-                <option value="0.0">🎨 永久保留 (畫布模式)</option>
-            </select>
-        </div>
-
-        <button id="clear-btn">清空畫布 (Space)</button>
-        <button id="save-btn" class="action-btn">📸 下載儲存畫作</button>
+        <button class="btn" onclick="showMessage()">點擊我！</button>
         
-        <button id="ai-btn" class="ai-btn">🤖 AI 畫作解讀與命名</button>
-
-        <div class="instructions">
-            - 滑動/點擊畫面來創作<br>
-            - 在引力模式下，粒子會跟隨游標<br>
-            - 點擊 AI 解讀，讓 Gemini 為你的畫作寫詩！
+        <div id="message-box">
+            ✨ 祝你有個美好的一天！繼續保持開心的笑容喔！ ✨
         </div>
     </div>
-
-    <!-- 隱藏/顯示 UI 按鈕 -->
-    <button id="toggle-ui" onclick="toggleUI()">隱藏面板</button>
-
-    <!-- AI 解讀結果視窗 -->
-    <div id="ai-modal">
-        <h2 id="ai-title">讀取中...</h2>
-        <p id="ai-critique">正在邀請藝術評論家前來欣賞您的作品，請稍候...</p>
-        <button class="close-btn" onclick="closeAIModal()">關閉</button>
-    </div>
-
-    <canvas id="artCanvas"></canvas>
 
     <script>
-        const canvas = document.getElementById('artCanvas');
-        const ctx = canvas.getContext('2d');
-
-        let particles = [];
-        let mouseX = window.innerWidth / 2;
-        let mouseY = window.innerHeight / 2;
-        let isDrawing = false; // 是否正在互動(滑鼠按住或持續滑動)
-
-        // 取得 UI 元素
-        const modeSelect = document.getElementById('mode-select');
-        const themeSelect = document.getElementById('theme-select');
-        const trailSelect = document.getElementById('trail-select');
-        let currentMode = modeSelect.value;
-        let currentTheme = themeSelect.value;
-        let currentTrailAlpha = parseFloat(trailSelect.value);
-
-        // 監聽設定改變
-        modeSelect.addEventListener('change', (e) => currentMode = e.target.value);
-        themeSelect.addEventListener('change', (e) => currentTheme = e.target.value);
-        trailSelect.addEventListener('change', (e) => currentTrailAlpha = parseFloat(e.target.value));
-
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        class Particle {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                // 初始速度
-                this.vx = (Math.random() - 0.5) * 8;
-                this.vy = (Math.random() - 0.5) * 8;
-                this.radius = Math.random() * 3 + 2; 
-                this.alpha = 1;
-                
-                // 根據當前主題設定顏色範圍
-                this.setColorByTheme();
-                
-                // 存活時間 (星象模式存活久一點)
-                this.fadeSpeed = currentMode === 'constellation' ? Math.random() * 0.005 + 0.002 : Math.random() * 0.015 + 0.01;
-            }
-
-            setColorByTheme() {
-                if (currentTheme === 'neon') {
-                    this.hue = Math.random() * 360; // 全色相
-                } else if (currentTheme === 'fire') {
-                    this.hue = Math.random() * 60;  // 紅到黃
-                } else if (currentTheme === 'ocean') {
-                    this.hue = Math.random() * 80 + 160; // 青到藍
-                }
-            }
-
-            update() {
-                // 根據不同模式套用不同物理法則
-                if (currentMode === 'gravity') {
-                    // 經典重力：自然往下墜落
-                    this.x += this.vx;
-                    this.y += this.vy;
-                    this.vy += 0.1; // 重力
-                } 
-                else if (currentMode === 'orbit') {
-                    // 星雲引力：朝滑鼠位置吸引
-                    const dx = mouseX - this.x;
-                    const dy = mouseY - this.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    // 距離越近或滑鼠正在互動時引力越強
-                    const force = isDrawing ? 0.05 : 0.01; 
-                    
-                    this.vx += dx * force;
-                    this.vy += dy * force;
-                    
-                    // 增加阻力避免速度無限疊加 (空氣阻力)
-                    this.vx *= 0.92;
-                    this.vy *= 0.92;
-
-                    this.x += this.vx;
-                    this.y += this.vy;
-                }
-                else if (currentMode === 'constellation') {
-                    // 星象模式：緩慢漂浮
-                    this.x += this.vx * 0.3;
-                    this.y += this.vy * 0.3;
-                }
-
-                // 淡出
-                this.alpha -= this.fadeSpeed;
-            }
-
-            draw() {
-                ctx.save();
-                ctx.globalAlpha = this.alpha;
-                ctx.beginPath();
-                ctx.fillStyle = `hsl(${this.hue}, 100%, 60%)`;
-                
-                // 星象模式繪製不同的點 (稍微帶點光暈)
-                if(currentMode === 'constellation'){
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = `hsl(${this.hue}, 100%, 60%)`;
-                }
-
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            }
-        }
-
-        function createParticles(x, y, count) {
-            for (let i = 0; i < count; i++) {
-                particles.push(new Particle(x, y));
-            }
-        }
-
-        // 滑鼠事件
-        window.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-            if (isDrawing || currentMode !== 'constellation') { // 星象模式不自動產生，避免太密集
-                createParticles(mouseX, mouseY, 2);
-            }
-        });
-
-        window.addEventListener('mousedown', (e) => {
-            isDrawing = true;
-            createParticles(e.clientX, e.clientY, currentMode === 'constellation' ? 15 : 30);
-        });
-
-        window.addEventListener('mouseup', () => isDrawing = false);
-
-        // 觸控事件
-        window.addEventListener('touchmove', (e) => {
-            const touch = e.touches[0];
-            mouseX = touch.clientX;
-            mouseY = touch.clientY;
-            createParticles(mouseX, mouseY, 2);
-        }, { passive: true });
-
-        window.addEventListener('touchstart', (e) => {
-            isDrawing = true;
-            const touch = e.touches[0];
-            mouseX = touch.clientX;
-            mouseY = touch.clientY;
-            createParticles(mouseX, mouseY, 20);
-        }, { passive: true });
-        
-        window.addEventListener('touchend', () => isDrawing = false);
-
-        // UI 按鈕與鍵盤事件
-        document.getElementById('clear-btn').addEventListener('click', () => {
-            particles = [];
-            // 清除畫布上永久保留的顏料
-            ctx.clearRect(0, 0, canvas.width, canvas.height); 
-        });
-        window.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
-                particles = [];
-                // 清除畫布上永久保留的顏料
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-            }
-        });
-
-        // 隱藏/顯示 UI 面板
-        let uiVisible = true;
-        function toggleUI() {
-            const panel = document.getElementById('control-panel');
-            const btn = document.getElementById('toggle-ui');
-            uiVisible = !uiVisible;
-            if(uiVisible) {
-                panel.style.transform = 'translateX(0)';
-                btn.innerText = '隱藏面板';
+        // 處理按鈕點擊事件，顯示隱藏的訊息
+        function showMessage() {
+            const messageBox = document.getElementById('message-box');
+            const btn = document.querySelector('.btn');
+            
+            if (messageBox.style.display === 'none' || messageBox.style.display === '') {
+                messageBox.style.display = 'block';
+                btn.textContent = '收起訊息';
+                // 產生隨機的五彩碎紙效果 (簡易版)
+                createConfetti();
             } else {
-                panel.style.transform = 'translateX(-150%)'; // 移出畫面
-                btn.innerText = '顯示面板';
+                messageBox.style.display = 'none';
+                btn.textContent = '點擊我！';
             }
         }
 
-        // 儲存圖片功能
-        document.getElementById('save-btn').addEventListener('click', () => {
-            // 建立暫存畫布來合成黑色背景與當前藝術圖 (避免截圖透明度出問題)
-            const exportCanvas = document.createElement('canvas');
-            exportCanvas.width = canvas.width;
-            exportCanvas.height = canvas.height;
-            const eCtx = exportCanvas.getContext('2d');
-            
-            // 填滿底色
-            eCtx.fillStyle = '#050508';
-            eCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-            // 畫上藝術作品
-            eCtx.drawImage(canvas, 0, 0);
-
-            // 下載
-            const link = document.createElement('a');
-            link.download = `digital-art-${new Date().getTime()}.png`;
-            link.href = exportCanvas.toDataURL('image/png');
-            link.click();
-        });
-
-        // AI 解讀功能 (使用 Gemini API)
-        const aiBtn = document.getElementById('ai-btn');
-        const aiModal = document.getElementById('ai-modal');
-        const aiTitle = document.getElementById('ai-title');
-        const aiCritique = document.getElementById('ai-critique');
-
-        function closeAIModal() {
-            aiModal.classList.remove('show');
-        }
-
-        aiBtn.addEventListener('click', async () => {
-            // 1. 準備畫面截圖
-            const exportCanvas = document.createElement('canvas');
-            exportCanvas.width = canvas.width;
-            exportCanvas.height = canvas.height;
-            const eCtx = exportCanvas.getContext('2d');
-            eCtx.fillStyle = '#050508';
-            eCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-            eCtx.drawImage(canvas, 0, 0);
-
-            // 取得 JPEG 格式的 Base64 字串 (去除開頭的 data:image/jpeg;base64,)
-            const dataUrl = exportCanvas.toDataURL('image/jpeg', 0.7);
-            const base64ImageData = dataUrl.split(',')[1];
-
-            // 2. 更新 UI 狀態
-            aiBtn.disabled = true;
-            aiBtn.innerText = '✨ AI 正在沉思...';
-            
-            // 3. 呼叫 Gemini API
-            try {
-                const prompt = "你是一位世界級的數位藝術評論家與詩人。請仔細觀察這幅抽象的生成藝術作品。請給它一個充滿詩意且富有創意的標題（繁體中文），並寫下約 2 到 3 句的詩意解讀或感受。";
+        // 簡易的粒子特效函數
+        function createConfetti() {
+            for (let i = 0; i < 30; i++) {
+                const confetti = document.createElement('div');
+                confetti.style.position = 'absolute';
+                confetti.style.width = '10px';
+                confetti.style.height = '10px';
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                confetti.style.left = `${Math.random() * 100}vw`;
+                confetti.style.top = '-10px';
+                confetti.style.borderRadius = '50%';
+                confetti.style.zIndex = '1000';
                 
-                const payload = {
-                    contents: [
-                        {
-                            role: "user",
-                            parts: [
-                                { text: prompt },
-                                {
-                                    inlineData: {
-                                        mimeType: "image/jpeg",
-                                        data: base64ImageData
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    // 使用 JSON Schema 強制 AI 回傳結構化資料，方便我們放入 UI
-                    generationConfig: {
-                        responseMimeType: "application/json",
-                        responseSchema: {
-                            type: "OBJECT",
-                            properties: {
-                                "title": { type: "STRING", description: "藝術品的標題" },
-                                "critique": { type: "STRING", description: "對藝術品的詩意評論與感受" }
-                            },
-                            required: ["title", "critique"]
-                        }
-                    }
-                };
+                document.body.appendChild(confetti);
 
-                const apiKey = ""; // Canvas 環境會自動帶入 API Key
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) throw new Error('API Request Failed');
-
-                const result = await response.json();
-                const jsonText = result.candidates[0].content.parts[0].text;
-                const aiData = JSON.parse(jsonText);
-
-                // 4. 顯示結果
-                aiTitle.innerText = `《 ${aiData.title} 》`;
-                aiCritique.innerText = aiData.critique;
-                aiModal.classList.add('show');
-
-            } catch (error) {
-                console.error("Gemini API Error:", error);
-                aiTitle.innerText = "連線中斷";
-                aiCritique.innerText = "藝術評論家暫時無法連線，請稍後再試一次。";
-                aiModal.classList.add('show');
-            } finally {
-                aiBtn.disabled = false;
-                aiBtn.innerText = '🤖 AI 畫作解讀與命名';
+                const animationDuration = Math.random() * 2 + 1;
+                
+                // 使用 Web Animations API
+                confetti.animate([
+                    { transform: `translate3d(0,0,0) rotate(0deg)`, opacity: 1 },
+                    { transform: `translate3d(${Math.random()*200 - 100}px, ${window.innerHeight}px, 0) rotate(${Math.random()*360}deg)`, opacity: 0 }
+                ], {
+                    duration: animationDuration * 1000,
+                    easing: 'cubic-bezier(.37,0,.63,1)'
+                }).onfinish = () => confetti.remove();
             }
-        });
-
-        function animate() {
-            // 背景殘影效果 (動態模糊)
-            if (currentTrailAlpha > 0) {
-                ctx.fillStyle = `rgba(5, 5, 8, ${currentTrailAlpha})`; 
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
-
-            // 如果是星象模式，需要繪製粒子之間的連線
-            if (currentMode === 'constellation') {
-                for (let i = 0; i < particles.length; i++) {
-                    for (let j = i + 1; j < particles.length; j++) {
-                        const dx = particles[i].x - particles[j].x;
-                        const dy = particles[i].y - particles[j].y;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-
-                        // 如果兩個粒子距離小於 100，畫出連線
-                        if (distance < 100) {
-                            ctx.beginPath();
-                            ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 - distance/1000})`; // 距離越近線越明顯
-                            ctx.lineWidth = 0.5;
-                            ctx.moveTo(particles[i].x, particles[i].y);
-                            ctx.lineTo(particles[j].x, particles[j].y);
-                            ctx.stroke();
-                        }
-                    }
-                }
-            }
-
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.update();
-                p.draw();
-
-                if (p.alpha <= 0) {
-                    particles.splice(i, 1);
-                }
-            }
-
-            // 限制粒子數量，避免星象模式運算過載導致畫面卡頓
-            if (particles.length > 300 && currentMode === 'constellation') {
-                particles.splice(0, 5); // 移除最舊的粒子
-            } else if (particles.length > 800) {
-                particles.splice(0, 10);
-            }
-
-            requestAnimationFrame(animate);
         }
 
-        // 啟動
-        animate();
+        // 更新時間與日期的函數
+        function updateTime() {
+            const now = new Date();
+            
+            // 格式化時間 (HH:MM:SS)
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const timeString = `${hours}:${minutes}:${seconds}`;
+            
+            // 格式化日期 (YYYY年MM月DD日 星期X)
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1; // 月份從 0 開始
+            const date = now.getDate();
+            const days = ['日', '一', '二', '三', '四', '五', '六'];
+            const dayName = days[now.getDay()];
+            const dateString = `${year}年${month}月${date}日 星期${dayName}`;
+
+            // 更新 DOM
+            document.getElementById('time-display').textContent = timeString;
+            document.getElementById('date-display').textContent = dateString;
+        }
+
+        // 初始呼叫一次，避免畫面載入時出現延遲
+        updateTime();
+        
+        // 設定每秒更新一次時間
+        setInterval(updateTime, 1000);
     </script>
 </body>
 </html>
