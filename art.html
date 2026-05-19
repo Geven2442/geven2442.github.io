@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動藝術專題：數位光影漣漪</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050508;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none; /* 防止手機瀏覽器滑動網頁 */
+        }
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        /* 控制面板的玻璃擬物設計 (Glassmorphism) */
+        #control-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background: rgba(15, 15, 20, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            width: 280px;
+            transition: transform 0.3s ease;
+        }
+        #control-panel h1 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, #00ffcc, #0088ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .control-group {
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        select, button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        select:hover, button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        option {
+            background: #111;
+            color: white;
+        }
+        button.action-btn {
+            background: linear-gradient(135deg, #00ffcc 0%, #0088ff 100%);
+            border: none;
+            color: #000;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        button.action-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        .instructions {
+            font-size: 12px;
+            color: #888;
+            margin-top: 15px;
+            line-height: 1.6;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 10px;
+        }
+        /* 隱藏 UI 按鈕 */
+        #toggle-ui {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 控制面板 -->
+    <div id="control-panel">
+        <h1>✨ 數位藝術畫板</h1>
+        
+        <div class="control-group">
+            <label for="mode-select">畫筆模式 (Mode)</label>
+            <select id="mode-select">
+                <option value="gravity">🌊 經典重力漣漪</option>
+                <option value="orbit">🌌 星雲引力旋轉</option>
+                <option value="constellation">✨ 星象神經連結</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="theme-select">色彩主題 (Theme)</label>
+            <select id="theme-select">
+                <option value="neon">🌈 霓虹光譜 (Neon)</option>
+                <option value="fire">🔥 烈焰火花 (Fire)</option>
+                <option value="ocean">🌊 深海波光 (Ocean)</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="trail-select">殘影保留 (Trail)</label>
+            <select id="trail-select">
+                <option value="0.15">🌊 動態水波 (短暫)</option>
+                <option value="0.02">☄️ 彗星尾巴 (延長)</option>
+                <option value="0.0">🎨 永久保留 (畫布模式)</option>
+            </select>
+        </div>
+
+        <button id="clear-btn">清空畫布 (Space)</button>
+        <button id="save-btn" class="action-btn">📸 下載儲存畫作</button>
+
+        <div class="instructions">
+            - 滑動/點擊畫面來創作<br>
+            - 在引力模式下，粒子會跟隨游標
+        </div>
+    </div>
+
+    <!-- 隱藏/顯示 UI 按鈕 -->
+    <button id="toggle-ui" onclick="toggleUI()">隱藏面板</button>
+
+    <canvas id="artCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('artCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let particles = [];
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        let isDrawing = false; // 是否正在互動(滑鼠按住或持續滑動)
+
+        // 取得 UI 元素
+        const modeSelect = document.getElementById('mode-select');
+        const themeSelect = document.getElementById('theme-select');
+        const trailSelect = document.getElementById('trail-select');
+        let currentMode = modeSelect.value;
+        let currentTheme = themeSelect.value;
+        let currentTrailAlpha = parseFloat(trailSelect.value);
+
+        // 監聽設定改變
+        modeSelect.addEventListener('change', (e) => currentMode = e.target.value);
+        themeSelect.addEventListener('change', (e) => currentTheme = e.target.value);
+        trailSelect.addEventListener('change', (e) => currentTrailAlpha = parseFloat(e.target.value));
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                // 初始速度
+                this.vx = (Math.random() - 0.5) * 8;
+                this.vy = (Math.random() - 0.5) * 8;
+                this.radius = Math.random() * 3 + 2; 
+                this.alpha = 1;
+                
+                // 根據當前主題設定顏色範圍
+                this.setColorByTheme();
+                
+                // 存活時間 (星象模式存活久一點)
+                this.fadeSpeed = currentMode === 'constellation' ? Math.random() * 0.005 + 0.002 : Math.random() * 0.015 + 0.01;
+            }
+
+            setColorByTheme() {
+                if (currentTheme === 'neon') {
+                    this.hue = Math.random() * 360; // 全色相
+                } else if (currentTheme === 'fire') {
+                    this.hue = Math.random() * 60;  // 紅到黃
+                } else if (currentTheme === 'ocean') {
+                    this.hue = Math.random() * 80 + 160; // 青到藍
+                }
+            }
+
+            update() {
+                // 根據不同模式套用不同物理法則
+                if (currentMode === 'gravity') {
+                    // 經典重力：自然往下墜落
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.vy += 0.1; // 重力
+                } 
+                else if (currentMode === 'orbit') {
+                    // 星雲引力：朝滑鼠位置吸引
+                    const dx = mouseX - this.x;
+                    const dy = mouseY - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // 距離越近或滑鼠正在互動時引力越強
+                    const force = isDrawing ? 0.05 : 0.01; 
+                    
+                    this.vx += dx * force;
+                    this.vy += dy * force;
+                    
+                    // 增加阻力避免速度無限疊加 (空氣阻力)
+                    this.vx *= 0.92;
+                    this.vy *= 0.92;
+
+                    this.x += this.vx;
+                    this.y += this.vy;
+                }
+                else if (currentMode === 'constellation') {
+                    // 星象模式：緩慢漂浮
+                    this.x += this.vx * 0.3;
+                    this.y += this.vy * 0.3;
+                }
+
+                // 淡出
+                this.alpha -= this.fadeSpeed;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.fillStyle = `hsl(${this.hue}, 100%, 60%)`;
+                
+                // 星象模式繪製不同的點 (稍微帶點光暈)
+                if(currentMode === 'constellation'){
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = `hsl(${this.hue}, 100%, 60%)`;
+                }
+
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function createParticles(x, y, count) {
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(x, y));
+            }
+        }
+
+        // 滑鼠事件
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            if (isDrawing || currentMode !== 'constellation') { // 星象模式不自動產生，避免太密集
+                createParticles(mouseX, mouseY, 2);
+            }
+        });
+
+        window.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            createParticles(e.clientX, e.clientY, currentMode === 'constellation' ? 15 : 30);
+        });
+
+        window.addEventListener('mouseup', () => isDrawing = false);
+
+        // 觸控事件
+        window.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            mouseX = touch.clientX;
+            mouseY = touch.clientY;
+            createParticles(mouseX, mouseY, 2);
+        }, { passive: true });
+
+        window.addEventListener('touchstart', (e) => {
+            isDrawing = true;
+            const touch = e.touches[0];
+            mouseX = touch.clientX;
+            mouseY = touch.clientY;
+            createParticles(mouseX, mouseY, 20);
+        }, { passive: true });
+        
+        window.addEventListener('touchend', () => isDrawing = false);
+
+        // UI 按鈕與鍵盤事件
+        document.getElementById('clear-btn').addEventListener('click', () => {
+            particles = [];
+            // 清除畫布上永久保留的顏料
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+        });
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                particles = [];
+                // 清除畫布上永久保留的顏料
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        });
+
+        // 隱藏/顯示 UI 面板
+        let uiVisible = true;
+        function toggleUI() {
+            const panel = document.getElementById('control-panel');
+            const btn = document.getElementById('toggle-ui');
+            uiVisible = !uiVisible;
+            if(uiVisible) {
+                panel.style.transform = 'translateX(0)';
+                btn.innerText = '隱藏面板';
+            } else {
+                panel.style.transform = 'translateX(-150%)'; // 移出畫面
+                btn.innerText = '顯示面板';
+            }
+        }
+
+        // 儲存圖片功能
+        document.getElementById('save-btn').addEventListener('click', () => {
+            // 建立暫存畫布來合成黑色背景與當前藝術圖 (避免截圖透明度出問題)
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = canvas.width;
+            exportCanvas.height = canvas.height;
+            const eCtx = exportCanvas.getContext('2d');
+            
+            // 填滿底色
+            eCtx.fillStyle = '#050508';
+            eCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+            // 畫上藝術作品
+            eCtx.drawImage(canvas, 0, 0);
+
+            // 下載
+            const link = document.createElement('a');
+            link.download = `digital-art-${new Date().getTime()}.png`;
+            link.href = exportCanvas.toDataURL('image/png');
+            link.click();
+        });
+
+        function animate() {
+            // 背景殘影效果 (動態模糊)
+            if (currentTrailAlpha > 0) {
+                ctx.fillStyle = `rgba(5, 5, 8, ${currentTrailAlpha})`; 
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // 如果是星象模式，需要繪製粒子之間的連線
+            if (currentMode === 'constellation') {
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        // 如果兩個粒子距離小於 100，畫出連線
+                        if (distance < 100) {
+                            ctx.beginPath();
+                            ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 - distance/1000})`; // 距離越近線越明顯
+                            ctx.lineWidth = 0.5;
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update();
+                p.draw();
+
+                if (p.alpha <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // 限制粒子數量，避免星象模式運算過載導致畫面卡頓
+            if (particles.length > 300 && currentMode === 'constellation') {
+                particles.splice(0, 5); // 移除最舊的粒子
+            } else if (particles.length > 800) {
+                particles.splice(0, 10);
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // 啟動
+        animate();
+    </script>
+</body>
+</html>
