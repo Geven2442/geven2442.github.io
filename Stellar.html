@@ -28,7 +28,7 @@
             color: var(--text-color);
             font-family: 'Orbitron', sans-serif;
             overflow: hidden;
-            touch-action: none; /* 阻止觸控螢幕上的默認滾動/縮放 */
+            touch-action: none;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -40,14 +40,13 @@
             position: relative;
             width: 100%;
             height: 100%;
-            max-width: 800px; /* 桌面端最大寬度 */
+            max-width: 800px;
             max-height: 1000px;
             box-shadow: 0 0 50px rgba(102, 252, 241, 0.2);
             overflow: hidden;
             background: radial-gradient(circle at center, #1f2833 0%, #0b0c10 100%);
         }
 
-        /* 畫布 */
         canvas {
             display: block;
             width: 100%;
@@ -60,7 +59,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            pointer-events: none; /* 讓點擊事件穿透到畫布 (除了按鈕) */
+            pointer-events: none;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -102,7 +101,6 @@
             transition: width 0.2s ease;
         }
 
-        /* 覆蓋層 (選單/結束畫面) */
         .overlay {
             position: absolute;
             top: 0;
@@ -115,7 +113,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            pointer-events: auto; /* 允許點擊 */
+            pointer-events: auto;
             z-index: 20;
             transition: opacity 0.3s ease;
         }
@@ -150,7 +148,15 @@
             line-height: 1.5;
         }
 
-        /* 按鈕樣式 */
+        /* 按鈕容器與樣式 */
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 250px;
+        }
+
         .btn {
             background: transparent;
             color: var(--primary-color);
@@ -167,6 +173,7 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 0 15px rgba(102, 252, 241, 0.3);
+            width: 100%;
         }
 
         .btn:hover {
@@ -191,7 +198,6 @@
             margin: 0 5px;
         }
 
-        /* 裝飾性背景星星 (CSS 動畫) */
         .stars-bg {
             position: absolute;
             top: 0;
@@ -202,7 +208,6 @@
             z-index: 0;
         }
         
-        /* 虛擬搖桿 (移動端) */
         #joystick-zone {
             position: absolute;
             bottom: 0;
@@ -211,7 +216,7 @@
             height: 50%;
             pointer-events: auto;
             z-index: 5;
-            display: none; /* 預設隱藏，檢測到觸控時顯示 */
+            display: none;
         }
         
         @media (max-width: 768px) {
@@ -224,16 +229,12 @@
 <body>
 
     <div id="game-container">
-        <!-- 裝飾背景層 -->
         <div class="stars-bg" id="stars-bg"></div>
         
-        <!-- 遊戲畫布 -->
         <canvas id="gameCanvas"></canvas>
         
-        <!-- 虛擬搖桿區域 (供觸控滑動) -->
         <div id="joystick-zone"></div>
 
-        <!-- UI 覆蓋層 -->
         <div id="ui-layer">
             <div class="hud">
                 <div class="score-container">
@@ -249,29 +250,34 @@
             </div>
         </div>
 
-        <!-- 開始/選單畫面 -->
         <div id="start-screen" class="overlay">
             <h1 class="title">Stellar<br>Scavenger</h1>
             <p class="message">在星際廢墟中收集能量水晶。<br>避開致命的小行星！</p>
-            <button class="btn" id="start-btn">啟動引擎 <i class="fa-solid fa-rocket"></i></button>
+            <div class="btn-group">
+                <button class="btn" id="start-btn">啟動引擎 <i class="fa-solid fa-rocket"></i></button>
+            </div>
             <div class="controls-hint">
                 <p>桌面: <i class="fa-solid fa-caret-left"></i> <i class="fa-solid fa-caret-right"></i> <i class="fa-solid fa-caret-up"></i> <i class="fa-solid fa-caret-down"></i> 或 游標移動</p>
                 <p>手機: 在螢幕下半部滑動控制方向</p>
             </div>
         </div>
 
-        <!-- 遊戲結束畫面 -->
         <div id="game-over-screen" class="overlay hidden">
             <h1 class="title" style="color: var(--danger-color); text-shadow: 0 0 20px var(--danger-color);">船體破裂</h1>
             <p class="message">收集到的水晶: <span id="final-score" style="color: var(--crystal-color); font-weight: bold; font-size: 2rem;">0</span></p>
-            <button class="btn" id="restart-btn" style="border-color: var(--danger-color); color: var(--danger-color);">重新部署 <i class="fa-solid fa-rotate-right"></i></button>
+            <div class="btn-group">
+                <button class="btn" id="restart-btn" style="border-color: var(--danger-color); color: var(--danger-color);">重新部署 <i class="fa-solid fa-rotate-right"></i></button>
+                <button class="btn" id="home-btn" style="border-color: var(--text-color); color: var(--text-color);">回主畫面 <i class="fa-solid fa-house"></i></button>
+            </div>
         </div>
 
-        <!-- 遊戲勝利畫面 -->
         <div id="game-win-screen" class="overlay hidden">
             <h1 class="title" style="color: #34c759; text-shadow: 0 0 20px #34c759;">躍遷成功</h1>
             <p class="message">能量滿載，你成功逃離了小行星帶！<br>最終得分: <span id="win-score" style="color: var(--crystal-color); font-weight: bold; font-size: 2rem;">0</span></p>
-            <button class="btn" id="win-restart-btn" style="border-color: #34c759; color: #34c759;">再次挑戰 <i class="fa-solid fa-space-awesome"></i></button>
+            <div class="btn-group">
+                <button class="btn" id="win-restart-btn" style="border-color: #34c759; color: #34c759;">再次挑戰 <i class="fa-solid fa-space-awesome"></i></button>
+                <button class="btn" id="win-home-btn" style="border-color: var(--text-color); color: var(--text-color);">回主畫面 <i class="fa-solid fa-house"></i></button>
+            </div>
         </div>
     </div>
 
@@ -288,10 +294,12 @@
         const restartBtn = document.getElementById('restart-btn');
         const joystickZone = document.getElementById('joystick-zone');
         
-        // 新增勝利畫面的 DOM 元素
+        // 新增畫面與按鈕的 DOM 元素
         const gameWinScreen = document.getElementById('game-win-screen');
         const winScoreElement = document.getElementById('win-score');
         const winRestartBtn = document.getElementById('win-restart-btn');
+        const homeBtn = document.getElementById('home-btn');
+        const winHomeBtn = document.getElementById('win-home-btn');
 
         // 遊戲狀態變量
         let gameLoopId;
@@ -326,7 +334,7 @@
         class Star {
             constructor() {
                 this.reset();
-                this.y = random(0, canvas.height); // 初始化時分散在整個螢幕
+                this.y = random(0, canvas.height);
             }
             reset() {
                 this.x = random(0, canvas.width);
@@ -336,7 +344,7 @@
                 this.color = `rgba(255, 255, 255, ${random(0.3, 0.8)})`;
             }
             update() {
-                this.y += this.speed * (isPlaying ? (1 + score/50) : 1); // 遊戲進行中，速度隨分數略增
+                this.y += this.speed * (isPlaying ? (1 + score/50) : 1);
                 if (this.y > canvas.height) this.reset();
             }
             draw() {
@@ -353,7 +361,7 @@
                 this.reset();
                 this.targetX = this.x;
                 this.targetY = this.y;
-                this.speed = 0.15; // 緩動跟隨速度
+                this.speed = 0.15;
                 this.thrustFrames = 0;
             }
             reset() {
@@ -365,11 +373,9 @@
                 this.vy = 0;
             }
             update() {
-                // 緩動向目標位置移動 (適用於滑鼠/觸控)
                 this.x += (this.targetX - this.x) * this.speed;
                 this.y += (this.targetY - this.y) * this.speed;
 
-                // 邊界限制
                 this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
                 this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
                 
@@ -379,19 +385,16 @@
                 ctx.save();
                 ctx.translate(this.x, this.y);
                 
-                // 計算傾斜角度 (基於水平移動速度)
                 const tilt = (this.targetX - this.x) * 0.05;
                 ctx.rotate(tilt);
 
-                // 繪製飛船主體 (科幻三角形)
                 ctx.beginPath();
-                ctx.moveTo(0, -this.radius * 1.5); // 機鼻
-                ctx.lineTo(this.radius, this.radius);  // 右翼
-                ctx.lineTo(0, this.radius * 0.5);   // 尾部凹陷
-                ctx.lineTo(-this.radius, this.radius); // 左翼
+                ctx.moveTo(0, -this.radius * 1.5);
+                ctx.lineTo(this.radius, this.radius);
+                ctx.lineTo(0, this.radius * 0.5);
+                ctx.lineTo(-this.radius, this.radius);
                 ctx.closePath();
                 
-                // 漸層填充
                 const gradient = ctx.createLinearGradient(0, -this.radius*1.5, 0, this.radius);
                 gradient.addColorStop(0, '#ffffff');
                 gradient.addColorStop(0.3, '#66fcf1');
@@ -404,11 +407,10 @@
                 ctx.lineWidth = 1.5;
                 ctx.stroke();
 
-                // 繪製推進器火焰
-                if (this.thrustFrames % 4 < 2) { // 閃爍效果
+                if (this.thrustFrames % 4 < 2) {
                     ctx.beginPath();
                     ctx.moveTo(-this.radius * 0.6, this.radius * 0.8);
-                    ctx.lineTo(0, this.radius * 1.8 + random(0, 10)); // 火焰長度隨機
+                    ctx.lineTo(0, this.radius * 1.8 + random(0, 10));
                     ctx.lineTo(this.radius * 0.6, this.radius * 0.8);
                     ctx.fillStyle = 'rgba(255, 150, 0, 0.8)';
                     ctx.shadowColor = '#ff3b30';
@@ -416,7 +418,6 @@
                     ctx.fill();
                 }
                 
-                // 繪製核心光暈
                 ctx.beginPath();
                 ctx.arc(0, 0, 4, 0, Math.PI * 2);
                 ctx.fillStyle = '#fff';
@@ -431,7 +432,7 @@
             constructor() {
                 this.radius = random(15, 35);
                 this.x = random(this.radius, canvas.width - this.radius);
-                this.y = -this.radius - 50; // 從螢幕上方外面生成
+                this.y = -this.radius - 50;
                 this.speedY = random(2, 5) * difficultyMultiplier;
                 this.speedX = random(-1, 1) * difficultyMultiplier;
                 this.rotation = random(0, Math.PI * 2);
@@ -439,7 +440,7 @@
                 this.vertices = Math.floor(random(5, 9));
                 this.offsets = [];
                 for (let i = 0; i < this.vertices; i++) {
-                    this.offsets.push(random(0.7, 1.1)); // 讓多邊形不規則
+                    this.offsets.push(random(0.7, 1.1));
                 }
                 this.markedForDeletion = false;
             }
@@ -448,11 +449,9 @@
                 this.y += this.speedY;
                 this.rotation += this.rotationSpeed;
 
-                // 邊界反彈 (左右)
                 if (this.x < -this.radius) this.x = canvas.width + this.radius;
                 if (this.x > canvas.width + this.radius) this.x = -this.radius;
 
-                // 離開底部標記刪除
                 if (this.y > canvas.height + this.radius) {
                     this.markedForDeletion = true;
                 }
@@ -473,13 +472,11 @@
                 }
                 ctx.closePath();
 
-                // 修正小行星的顏色為暗灰色，而不是水晶的顏色
                 ctx.fillStyle = '#5c6066'; 
                 ctx.shadowColor = '#2b3036';
                 ctx.shadowBlur = 5;
                 ctx.fill();
                 
-                // 繪製小行星的立體感紋理
                 ctx.beginPath();
                 ctx.moveTo(0, -this.radius * 0.8);
                 ctx.lineTo(this.radius * 0.4, 0);
@@ -491,14 +488,12 @@
             }
         }
 
-        // 新增缺少的 Crystal (水晶) 類別
         class Crystal {
             constructor() {
                 this.radius = 12;
                 this.x = random(this.radius, canvas.width - this.radius);
                 this.y = -this.radius;
                 this.speedY = random(2, 4) * difficultyMultiplier;
-                // 10% 機率產生特殊紅色水晶，提供更多分數與能量
                 this.type = Math.random() > 0.9 ? 'special' : 'normal'; 
                 this.markedForDeletion = false;
                 this.rotation = 0;
@@ -515,7 +510,6 @@
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.rotation);
 
-                // 繪製菱形水晶
                 ctx.beginPath();
                 ctx.moveTo(0, -this.radius);
                 ctx.lineTo(this.radius * 0.7, 0);
@@ -531,7 +525,6 @@
                 ctx.shadowBlur = 15;
                 ctx.fill();
                 
-                // 繪製水晶的高光反光效果
                 ctx.beginPath();
                 ctx.moveTo(0, -this.radius * 0.6);
                 ctx.lineTo(this.radius * 0.3, 0);
@@ -594,11 +587,10 @@
             player.targetY = e.clientY - rect.top;
         });
 
-        // 觸控控制 (虛擬搖桿概念)
+        // 觸控控制
         let touchStartX, touchStartY;
         let playerStartTargetX, playerStartTargetY;
         
-        // 偵測是否為觸控設備以顯示合適提示
         window.addEventListener('touchstart', function detectTouch() {
             joystickZone.style.display = 'block';
             window.removeEventListener('touchstart', detectTouch);
@@ -621,7 +613,6 @@
             const deltaX = touch.clientX - touchStartX;
             const deltaY = touch.clientY - touchStartY;
             
-            // 將滑動距離映射到目標位置 (可以調整靈敏度)
             const sensitivity = 1.5; 
             player.targetX = playerStartTargetX + deltaX * sensitivity;
             player.targetY = playerStartTargetY + deltaY * sensitivity;
@@ -646,13 +637,11 @@
         }
 
         function spawnEntities() {
-            // 生成小行星
-            const asteroidSpawnRate = Math.max(20, 60 - score / 100); // 隨分數加快
+            const asteroidSpawnRate = Math.max(20, 60 - score / 100);
             if (frameCount % Math.floor(asteroidSpawnRate) === 0) {
                 asteroids.push(new Asteroid());
             }
 
-            // 生成水晶
             if (frameCount % 45 === 0) {
                 crystals.push(new Crystal());
             }
@@ -662,9 +651,8 @@
             if (!isPlaying) return;
 
             frameCount++;
-            difficultyMultiplier = 1 + score / 1000; // 難度隨分數增加
+            difficultyMultiplier = 1 + score / 1000;
 
-            // 鍵盤控制後備 (如果沒用滑鼠/觸控)
             const speed = 7;
             if (keys['ArrowLeft'] || keys['KeyA']) player.targetX -= speed;
             if (keys['ArrowRight'] || keys['KeyD']) player.targetX += speed;
@@ -673,7 +661,6 @@
 
             player.update();
             
-            // 持續消耗能量
             if (frameCount % 60 === 0) {
                 energy -= 2 * difficultyMultiplier;
                 updateEnergyUI();
@@ -686,22 +673,18 @@
 
             spawnEntities();
 
-            // 更新背景星星
             backgroundStars.forEach(star => star.update());
 
-            // 更新小行星與碰撞檢測
             for (let i = asteroids.length - 1; i >= 0; i--) {
                 let ast = asteroids[i];
                 ast.update();
                 
-                // 撞擊小行星
                 if (checkCollision(player, ast)) {
                     createParticles(player.x, player.y, '#66fcf1', true, 30);
                     createParticles(ast.x, ast.y, '#5c6066', true, 20);
                     
-                    energy -= 30; // 大量扣能
+                    energy -= 30;
                     
-                    // 螢幕震動效果 (可選)
                     canvas.style.transform = `translate(${random(-5,5)}px, ${random(-5,5)}px)`;
                     setTimeout(() => canvas.style.transform = 'none', 100);
                     
@@ -710,7 +693,7 @@
                     
                     if (energy <= 0) {
                         gameOver();
-                        return; // 提早結束當前幀
+                        return;
                     }
                 }
                 
@@ -719,26 +702,23 @@
                 }
             }
 
-            // 更新水晶與收集
             for (let i = crystals.length - 1; i >= 0; i--) {
                 let cry = crystals[i];
                 cry.update();
                 
-                // 收集水晶
                 if (checkCollision(player, cry)) {
                     createParticles(cry.x, cry.y, cry.type === 'special' ? '#ff3b30' : '#ffd700', false, 15);
                     score += cry.type === 'special' ? 50 : 10;
                     scoreElement.innerText = score;
                     
-                    energy = Math.min(100, energy + (cry.type === 'special' ? 25 : 10)); // 恢復能量
+                    energy = Math.min(100, energy + (cry.type === 'special' ? 25 : 10));
                     updateEnergyUI();
                     
                     cry.markedForDeletion = true;
 
-                    // 判斷勝利條件 (達到 500 分)
                     if (score >= 500) {
                         gameWin();
-                        return; // 提早結束當前幀更新
+                        return;
                     }
                 }
                 
@@ -747,7 +727,6 @@
                 }
             }
 
-            // 更新粒子
             for (let i = particles.length - 1; i >= 0; i--) {
                 particles[i].update();
                 if (particles[i].markedForDeletion) {
@@ -757,21 +736,17 @@
         }
 
         function draw() {
-            // 清空畫布並繪製漸層背景
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // 繪製背景星星
             backgroundStars.forEach(star => star.draw());
 
             if (isPlaying) {
-                // 繪製實體
                 particles.forEach(p => p.draw());
                 crystals.forEach(c => c.draw());
                 asteroids.forEach(a => a.draw());
                 player.draw();
             } else {
-                 // 選單狀態下只繪製星星
-                 backgroundStars.forEach(star => star.update()); // 讓星星在選單也動
+                 backgroundStars.forEach(star => star.update());
             }
         }
 
@@ -799,8 +774,20 @@
             initGame();
             startScreen.classList.add('hidden');
             gameOverScreen.classList.add('hidden');
-            gameWinScreen.classList.add('hidden'); // 確保勝利畫面隱藏
+            gameWinScreen.classList.add('hidden');
             isPlaying = true;
+        }
+
+        function goToHome() {
+            // 隱藏結束與勝利畫面，顯示主畫面
+            gameOverScreen.classList.add('hidden');
+            gameWinScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            
+            // 將 UI 數值歸零重置
+            scoreElement.innerText = "0";
+            energyFill.style.width = "100%";
+            energyFill.style.background = 'linear-gradient(90deg, #ff3b30, #ffcc00, #34c759)';
         }
 
         function gameOver() {
@@ -808,10 +795,9 @@
             finalScoreElement.innerText = score;
             gameOverScreen.classList.remove('hidden');
             
-            // 產生死亡大爆炸
             createParticles(player.x, player.y, '#66fcf1', true, 50);
             createParticles(player.x, player.y, '#ff3b30', true, 50);
-            draw(); // 強制繪製一次爆炸
+            draw();
         }
 
         function gameWin() {
@@ -819,18 +805,21 @@
             winScoreElement.innerText = score;
             gameWinScreen.classList.remove('hidden');
             
-            // 產生勝利特效 (綠色與金色光芒)
             createParticles(player.x, player.y, '#34c759', true, 80);
             createParticles(player.x, player.y, '#ffd700', true, 80);
-            draw(); // 強制繪製一次特效
+            draw();
         }
 
         // 事件綁定
         startBtn.addEventListener('click', startGame);
         restartBtn.addEventListener('click', startGame);
-        winRestartBtn.addEventListener('click', startGame); // 綁定勝利畫面的按鈕
+        winRestartBtn.addEventListener('click', startGame);
+        
+        // 綁定回主畫面按鈕
+        homeBtn.addEventListener('click', goToHome);
+        winHomeBtn.addEventListener('click', goToHome);
 
-        // 啟動初始動畫循環 (顯示背景)
+        // 啟動初始動畫循環
         gameLoop();
 
     </script>
