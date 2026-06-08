@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>星際拾荒者 - 終極升級版</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --primary-color: #66fcf1;
+            --secondary-color: #45a29e;
+            --text-color: #c5c6c7;
+            --danger-color: #ff3b30;
+            --crystal-color: #ffd700;
+            --shield-color: #00e5ff;
+            --magnet-color: #b388ff;
+            --laser-color: #ff1744;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+            touch-action: none; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 800px;
+            max-height: 1000px;
+            box-shadow: 0 0 50px rgba(102, 252, 241, 0.2);
+            overflow: hidden;
+            background: radial-gradient(circle at center, #1f2833 0%, #0b0c10 100%);
+        }
+
+        canvas { display: block; width: 100%; height: 100%; }
+
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: flex; flex-direction: column;
+            justify-content: space-between; padding: 20px; z-index: 10;
+        }
+
+        .hud {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            font-size: 1.2rem; font-weight: 700; text-shadow: 0 0 10px var(--primary-color);
+        }
+
+        .hud-left, .hud-right { display: flex; flex-direction: column; gap: 10px; }
+
+        .stat-box {
+            background: rgba(31, 40, 51, 0.7); padding: 10px 20px;
+            border-radius: 30px; border: 1px solid var(--secondary-color);
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        .energy-bar-bg {
+            width: 120px; height: 12px; background: #333;
+            border-radius: 6px; overflow: hidden; position: relative;
+        }
+
+        .energy-bar-fill {
+            height: 100%; width: 100%;
+            background: linear-gradient(90deg, #ff3b30, #ffcc00, #34c759);
+            transition: width 0.2s ease, background 0.3s ease;
+        }
+        
+        .energy-text {
+            position: absolute; width: 100%; text-align: center; 
+            font-size: 0.7rem; top: 0; line-height: 12px; color: white; text-shadow: 1px 1px 2px black;
+        }
+
+        /* 增益效果圖示 */
+        .buffs-container { display: flex; gap: 10px; }
+        .buff-icon {
+            width: 35px; height: 35px; border-radius: 50%; display: flex;
+            justify-content: center; align-items: center; font-size: 1rem;
+            background: rgba(31, 40, 51, 0.8); border: 2px solid; opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .buff-icon.active { opacity: 1; animation: pulseBuff 1s infinite alternate; }
+        .buff-shield { border-color: var(--shield-color); color: var(--shield-color); box-shadow: 0 0 10px var(--shield-color); }
+        .buff-magnet { border-color: var(--magnet-color); color: var(--magnet-color); box-shadow: 0 0 10px var(--magnet-color); }
+        .buff-laser { border-color: var(--laser-color); color: var(--laser-color); box-shadow: 0 0 10px var(--laser-color); }
+
+        @keyframes pulseBuff { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
+
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 12, 16, 0.85); backdrop-filter: blur(5px);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            pointer-events: auto; z-index: 20; transition: opacity 0.3s ease;
+        }
+        .overlay.hidden { opacity: 0; pointer-events: none; }
+
+        .title {
+            font-size: 3rem; font-weight: 900; color: var(--primary-color);
+            text-transform: uppercase; letter-spacing: 5px; margin-bottom: 20px;
+            text-align: center; text-shadow: 0 0 20px var(--primary-color), 0 0 40px var(--secondary-color);
+            animation: pulseText 2s infinite alternate;
+        }
+
+        @keyframes pulseText {
+            0% { text-shadow: 0 0 10px var(--primary-color); transform: scale(1); }
+            100% { text-shadow: 0 0 25px var(--primary-color), 0 0 50px var(--secondary-color); transform: scale(1.05); }
+        }
+
+        .btn {
+            background: transparent; color: var(--primary-color); border: 2px solid var(--primary-color);
+            padding: 12px 30px; font-size: 1.2rem; font-family: 'Orbitron', sans-serif;
+            font-weight: 700; border-radius: 50px; cursor: pointer; text-transform: uppercase;
+            letter-spacing: 2px; transition: all 0.3s ease; margin: 10px;
+            box-shadow: 0 0 15px rgba(102, 252, 241, 0.3);
+        }
+        .btn:hover { background: var(--primary-color); color: var(--bg-color); box-shadow: 0 0 30px rgba(102, 252, 241, 0.6); transform: translateY(-3px); }
+        .btn.gold { color: var(--crystal-color); border-color: var(--crystal-color); box-shadow: 0 0 15px rgba(255, 215, 0, 0.3); }
+        .btn.gold:hover { background: var(--crystal-color); color: var(--bg-color); box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); }
+
+        /* 商店介面 */
+        .shop-panel {
+            background: #1f2833; border: 2px solid var(--secondary-color);
+            border-radius: 15px; padding: 20px; width: 90%; max-width: 500px;
+            box-shadow: 0 0 30px rgba(69, 162, 158, 0.4); max-height: 80%; overflow-y: auto;
+        }
+        .shop-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--secondary-color); padding-bottom: 15px; margin-bottom: 15px; }
+        .shop-item { display: flex; justify-content: space-between; align-items: center; background: #0b0c10; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #333; }
+        .shop-item-info h3 { color: var(--primary-color); font-size: 1.1rem; margin-bottom: 5px; }
+        .shop-item-info p { font-size: 0.8rem; color: #aaa; }
+        .shop-buy-btn { background: #333; border: 1px solid var(--crystal-color); color: var(--crystal-color); padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .shop-buy-btn:hover:not(:disabled) { background: var(--crystal-color); color: #000; }
+        .shop-buy-btn:disabled { border-color: #555; color: #555; cursor: not-allowed; }
+        
+        #joystick-zone { position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; pointer-events: auto; z-index: 5; display: none; }
+        .screen-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(4px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-6px, 0, 0); } 40%, 60% { transform: translate3d(6px, 0, 0); } }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="joystick-zone"></div>
+
+        <div id="ui-layer">
+            <div class="hud">
+                <div class="hud-left">
+                    <div class="stat-box">
+                        <i class="fa-solid fa-gem" style="color: var(--crystal-color);"></i>
+                        <span id="score">0</span>
+                    </div>
+                    <div class="stat-box" style="font-size:0.9rem; padding: 5px 15px;">
+                        <i class="fa-solid fa-wallet" style="color: #fff;"></i>
+                        <span id="hud-wallet">0</span>
+                    </div>
+                </div>
+                <div class="hud-right">
+                    <div class="stat-box">
+                        <i class="fa-solid fa-bolt" style="color: var(--danger-color);"></i>
+                        <div class="energy-bar-bg">
+                            <div class="energy-bar-fill" id="energy-fill"></div>
+                            <div class="energy-text"><span id="energy-text-val">100</span> / <span id="energy-text-max">100</span></div>
+                        </div>
+                    </div>
+                    <div class="buffs-container">
+                        <div class="buff-icon buff-shield" id="icon-shield"><i class="fa-solid fa-shield-halved"></i></div>
+                        <div class="buff-icon buff-magnet" id="icon-magnet"><i class="fa-solid fa-magnet"></i></div>
+                        <div class="buff-icon buff-laser" id="icon-laser"><i class="fa-solid fa-burst"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="start-screen" class="overlay">
+            <h1 class="title">Stellar<br>Scavenger</h1>
+            <p style="margin-bottom: 20px;">總資產: <i class="fa-solid fa-gem" style="color: var(--crystal-color);"></i> <span id="start-wallet" style="color: var(--crystal-color); font-weight: bold;">0</span></p>
+            <button class="btn" id="start-btn">啟動引擎 <i class="fa-solid fa-rocket"></i></button>
+            <button class="btn gold" id="open-shop-btn">星際商店 <i class="fa-solid fa-store"></i></button>
+        </div>
+
+        <div id="game-over-screen" class="overlay hidden">
+            <h1 class="title" style="color: var(--danger-color); text-shadow: 0 0 20px var(--danger-color);">船體破裂</h1>
+            <p style="font-size: 1.5rem; margin-bottom: 10px;">本次得分: <span id="final-score" style="color: var(--crystal-color); font-weight: bold;">0</span></p>
+            <p style="margin-bottom: 30px;">總資產: <i class="fa-solid fa-gem" style="color: var(--crystal-color);"></i> <span id="end-wallet" style="color: var(--crystal-color); font-weight: bold;">0</span></p>
+            <button class="btn" id="restart-btn" style="border-color: var(--danger-color); color: var(--danger-color);">重新部署 <i class="fa-solid fa-rotate-right"></i></button>
+            <button class="btn gold" id="open-shop-btn-end">開啟商店 <i class="fa-solid fa-store"></i></button>
+        </div>
+        
+        <div id="game-win-screen" class="overlay hidden">
+            <h1 class="title" style="color: #34c759; text-shadow: 0 0 20px #34c759;">躍遷成功</h1>
+            <p style="font-size: 1.2rem; margin-bottom: 10px; text-align: center;">你收集了足夠的能量，成功逃離！</p>
+            <p style="font-size: 1.5rem; margin-bottom: 30px;">本次得分: <span id="win-score" style="color: var(--crystal-color); font-weight: bold;">0</span></p>
+            <button class="btn" id="win-restart-btn" style="border-color: #34c759; color: #34c759;">再次挑戰 <i class="fa-solid fa-space-awesome"></i></button>
+            <button class="btn gold" id="open-shop-btn-win">逛逛商店 <i class="fa-solid fa-store"></i></button>
+        </div>
+
+        <div id="shop-screen" class="overlay hidden">
+            <div class="shop-panel">
+                <div class="shop-header">
+                    <h2>星際補給站</h2>
+                    <div style="font-size: 1.2rem;">
+                        <i class="fa-solid fa-gem" style="color: var(--crystal-color);"></i> 
+                        <span id="shop-wallet" style="color: var(--crystal-color); font-weight: bold;">0</span>
+                    </div>
+                </div>
+                
+                <div class="shop-item">
+                    <div class="shop-item-info">
+                        <h3>護盾升級 <span id="lvl-energy" style="color:#fff;">(Lv.1)</span></h3>
+                        <p>提升飛船最大能量上限 (+25/級)</p>
+                    </div>
+                    <button class="shop-buy-btn" id="buy-energy">100 <i class="fa-solid fa-gem"></i></button>
+                </div>
+                
+                <div class="shop-item">
+                    <div class="shop-item-info">
+                        <h3>引擎優化 <span id="lvl-engine" style="color:#fff;">(Lv.1)</span></h3>
+                        <p>減少自然消耗能量的速度 (-10%/級)</p>
+                    </div>
+                    <button class="shop-buy-btn" id="buy-engine">150 <i class="fa-solid fa-gem"></i></button>
+                </div>
+                
+                <div class="shop-item">
+                    <div class="shop-item-info">
+                        <h3>磁力強化 <span id="lvl-magnet" style="color:#fff;">(Lv.1)</span></h3>
+                        <p>永久提升磁鐵吸取水晶的速度</p>
+                    </div>
+                    <button class="shop-buy-btn" id="buy-magnet">80 <i class="fa-solid fa-gem"></i></button>
+                </div>
+
+                <div class="shop-item">
+                    <div class="shop-item-info">
+                        <h3 style="color: #ff3b30;">赤紅塗裝 <span id="status-color-red" style="color:#fff;"></span></h3>
+                        <p>解鎖專屬紅色烈焰飛船外觀</p>
+                    </div>
+                    <button class="shop-buy-btn" id="buy-color-red">500 <i class="fa-solid fa-gem"></i></button>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" id="close-shop-btn">離開商店 <i class="fa-solid fa-door-open"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 音效引擎 (Web Audio API) ---
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTone(freq, type, duration, vol = 0.1, slideFreq = null) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            if (slideFreq) {
+                osc.frequency.exponentialRampToValueAtTime(slideFreq, audioCtx.currentTime + duration);
+            }
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const SFX = {
+            pickupNormal: () => playTone(1200, 'sine', 0.1, 0.1, 1600),
+            pickupSpecial: () => { playTone(1500, 'square', 0.1, 0.1, 2000); setTimeout(() => playTone(2000, 'square', 0.2, 0.1, 3000), 100); },
+            pickupItem: () => playTone(800, 'triangle', 0.3, 0.2, 1200),
+            explosion: () => playTone(100, 'sawtooth', 0.5, 0.3, 10),
+            shoot: () => playTone(800, 'square', 0.1, 0.05, 200),
+            hit: () => playTone(300, 'sawtooth', 0.1, 0.1, 100),
+            alarm: () => playTone(400, 'square', 0.2, 0.1),
+            buy: () => { playTone(1000, 'sine', 0.1, 0.1); setTimeout(() => playTone(1500, 'sine', 0.2, 0.1), 100); }
+        };
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('game-container');
+        
+        let gameLoopId;
+        let isPlaying = false;
+        let score = 0;
+        let frameCount = 0;
+        let difficultyMultiplier = 1;
+        let screenShakeFrames = 0;
+        
+        // --- 修正區域：加入 Try-Catch 防止因無權存取 LocalStorage 導致的腳本崩潰 ---
+        let totalCrystals = 0;
+        let playerUpgrades = {
+            energyLvl: 1, engineLvl: 1, magnetLvl: 1, hasRedSkin: false, equippedSkin: 'default'
+        };
+
+        try {
+            let savedWallet = localStorage.getItem('stellar_wallet');
+            if (savedWallet) totalCrystals = parseInt(savedWallet) || 0;
+            
+            let savedUpgrades = JSON.parse(localStorage.getItem('stellar_upgrades'));
+            if (savedUpgrades) playerUpgrades = { ...playerUpgrades, ...savedUpgrades };
+        } catch (e) {
+            console.warn("無法存取 LocalStorage 存檔，遊戲將以預設進度啟動。");
+        }
+
+        function getMaxEnergy() { return 100 + (playerUpgrades.energyLvl - 1) * 25; }
+        function getEngineDrain() { return 2 * Math.pow(0.9, playerUpgrades.engineLvl - 1); }
+        function getMagnetSpeed() { return 12 + (playerUpgrades.magnetLvl - 1) * 3; } 
+        
+        let energy = getMaxEnergy();
+
+        function saveGame() {
+            try {
+                localStorage.setItem('stellar_wallet', totalCrystals.toString());
+                localStorage.setItem('stellar_upgrades', JSON.stringify(playerUpgrades));
+            } catch (e) {
+                // 安全略過錯誤
+            }
+            updateWalletUI();
+        }
+
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function random(min, max) { return Math.random() * (max - min) + min; }
+        function checkCollision(obj1, obj2) {
+            const dx = obj1.x - obj2.x;
+            const dy = obj1.y - obj2.y;
+            return Math.sqrt(dx * dx + dy * dy) < (obj1.radius || obj1.size) + (obj2.radius || obj2.size);
+        }
+
+        class Star {
+            constructor() { this.reset(); this.y = random(0, canvas.height); }
+            reset() { this.x = random(0, canvas.width); this.y = -10; this.size = random(0.5, 2.5); this.speed = this.size * random(1, 3); this.color = `rgba(255, 255, 255, ${random(0.3, 0.8)})`; }
+            update() { this.y += this.speed * (isPlaying ? (1 + score/100) : 1); if (this.y > canvas.height) this.reset(); }
+            draw() { ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); }
+        }
+
+        class Particle {
+            constructor(x, y, color, isExplosion, isTrail = false) {
+                this.x = x; this.y = y; this.color = color;
+                this.radius = isTrail ? random(1, 3) : random(2, 5);
+                const angle = random(0, Math.PI * 2);
+                const speed = isExplosion ? random(2, 8) : random(0.5, 2);
+                this.vx = Math.cos(angle) * speed;
+                this.vy = isTrail ? random(1, 3) : Math.sin(angle) * speed;
+                this.life = 1.0;
+                this.decay = isTrail ? random(0.05, 0.1) : random(0.02, 0.05);
+                this.markedForDeletion = false;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy; this.life -= this.decay;
+                if (this.life <= 0) this.markedForDeletion = true;
+            }
+            draw() {
+                ctx.globalAlpha = Math.max(0, this.life);
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color; ctx.fill(); ctx.globalAlpha = 1.0;
+            }
+        }
+
+        class Projectile {
+            constructor(x, y) {
+                this.x = x; this.y = y; this.radius = 4;
+                this.speedY = -10; this.markedForDeletion = false;
+            }
+            update() {
+                this.y += this.speedY;
+                if (this.y < -10) this.markedForDeletion = true;
+            }
+            draw() {
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#ff1744'; ctx.shadowColor = '#ff1744'; ctx.shadowBlur = 10;
+                ctx.fill(); ctx.shadowBlur = 0;
+            }
+        }
+
+        class Player {
+            constructor() {
+                this.radius = 15;
+                this.reset();
+                this.speed = 0.15; 
+            }
+            reset() {
+                this.x = canvas.width / 2; this.y = canvas.height * 0.8;
+                this.targetX = this.x; this.targetY = this.y;
+                this.thrustFrames = 0;
+                this.buffs = { shield: 0, magnet: 0, laser: 0 };
+            }
+            update() {
+                this.x += (this.targetX - this.x) * this.speed;
+                this.y += (this.targetY - this.y) * this.speed;
+                this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
+                this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
+                this.thrustFrames++;
+
+                if (isPlaying && this.thrustFrames % 2 === 0) {
+                    particles.push(new Particle(this.x + random(-5, 5), this.y + 10, '#66fcf1', false, true));
+                }
+
+                for (let buff in this.buffs) {
+                    if (this.buffs[buff] > 0) {
+                        this.buffs[buff]--;
+                        if (this.buffs[buff] === 0) updateBuffUI(); 
+                    }
+                }
+
+                if (this.buffs.laser > 0 && this.thrustFrames % 15 === 0) {
+                    projectiles.push(new Projectile(this.x, this.y - 20));
+                    SFX.shoot();
+                }
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                const tilt = (this.targetX - this.x) * 0.05;
+                ctx.rotate(tilt);
+
+                if (this.buffs.magnet > 0) {
+                    ctx.beginPath(); ctx.arc(0, 0, this.radius + 30 + Math.sin(this.thrustFrames * 0.1) * 10, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(179, 136, 255, 0.1)'; ctx.fill();
+                    ctx.strokeStyle = 'rgba(179, 136, 255, 0.5)'; ctx.lineWidth = 2; ctx.stroke();
+                }
+
+                ctx.beginPath();
+                ctx.moveTo(0, -this.radius * 1.5); 
+                ctx.lineTo(this.radius, this.radius);  
+                ctx.lineTo(0, this.radius * 0.5);   
+                ctx.lineTo(-this.radius, this.radius); 
+                ctx.closePath();
+                
+                const gradient = ctx.createLinearGradient(0, -this.radius*1.5, 0, this.radius);
+                gradient.addColorStop(0, '#ffffff');
+                if(playerUpgrades.equippedSkin === 'red') {
+                    gradient.addColorStop(0.3, '#ff3b30'); gradient.addColorStop(1, '#8a0000');
+                    ctx.shadowColor = '#ff3b30';
+                } else {
+                    gradient.addColorStop(0.3, '#66fcf1'); gradient.addColorStop(1, '#45a29e');
+                    ctx.shadowColor = '#66fcf1';
+                }
+                
+                ctx.fillStyle = gradient; ctx.shadowBlur = 15;
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+
+                if (this.thrustFrames % 4 < 2) {
+                    ctx.beginPath(); ctx.moveTo(-this.radius * 0.6, this.radius * 0.8);
+                    ctx.lineTo(0, this.radius * 1.8 + random(0, 10)); ctx.lineTo(this.radius * 0.6, this.radius * 0.8);
+                    ctx.fillStyle = 'rgba(255, 150, 0, 0.8)'; ctx.shadowColor = '#ff3b30'; ctx.shadowBlur = 20; ctx.fill();
+                }
+
+                if (this.buffs.shield > 0) {
+                    ctx.beginPath(); ctx.arc(0, 0, this.radius + 10, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 3; ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 15;
+                    ctx.fillStyle = 'rgba(0, 229, 255, 0.2)'; ctx.fill(); ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        class Asteroid {
+            constructor() {
+                this.radius = random(15, 35);
+                this.x = random(this.radius, canvas.width - this.radius);
+                this.y = -this.radius - 50;
+                this.speedY = random(2, 5) * difficultyMultiplier;
+                this.speedX = random(-1, 1) * difficultyMultiplier;
+                this.rotation = random(0, Math.PI * 2);
+                this.rotationSpeed = random(-0.05, 0.05);
+                this.vertices = Math.floor(random(5, 9));
+                this.offsets = Array.from({length: this.vertices}, () => random(0.7, 1.1));
+                this.markedForDeletion = false;
+            }
+            update() {
+                this.x += this.speedX; this.y += this.speedY; this.rotation += this.rotationSpeed;
+                if (this.x < -this.radius) this.x = canvas.width + this.radius;
+                if (this.x > canvas.width + this.radius) this.x = -this.radius;
+                if (this.y > canvas.height + this.radius) this.markedForDeletion = true;
+            }
+            draw() {
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
+                ctx.beginPath();
+                for (let i = 0; i < this.vertices; i++) {
+                    const angle = (i / this.vertices) * Math.PI * 2;
+                    const r = this.radius * this.offsets[i];
+                    if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                    else ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                }
+                ctx.closePath();
+                ctx.fillStyle = '#5c6066'; ctx.shadowColor = '#2b3036'; ctx.shadowBlur = 5; ctx.fill();
+                ctx.beginPath(); ctx.moveTo(0, -this.radius * 0.8); ctx.lineTo(this.radius * 0.4, 0);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        class Crystal {
+            constructor() {
+                this.radius = 12;
+                this.x = random(this.radius, canvas.width - this.radius);
+                this.y = -this.radius;
+                this.speedY = random(2, 4) * difficultyMultiplier;
+                this.type = Math.random() > 0.9 ? 'special' : 'normal'; 
+                this.markedForDeletion = false;
+                this.rotation = 0;
+            }
+            update(playerX, playerY, magnetActive) {
+                if (magnetActive) {
+                    const dx = playerX - this.x; const dy = playerY - this.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    // 加入安全距離判定，防止 NaN 錯誤
+                    if (dist > 0.5) {
+                        const speed = getMagnetSpeed();
+                        this.x += (dx / dist) * speed; 
+                        this.y += (dy / dist) * speed;
+                        this.rotation += 0.2;
+                        return; 
+                    }
+                }
+                this.y += this.speedY; this.rotation += 0.05;
+                if (this.y > canvas.height + this.radius) this.markedForDeletion = true;
+            }
+            draw() {
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
+                ctx.beginPath(); ctx.moveTo(0, -this.radius); ctx.lineTo(this.radius * 0.7, 0);
+                ctx.lineTo(0, this.radius); ctx.lineTo(-this.radius * 0.7, 0); ctx.closePath();
+                const color = this.type === 'special' ? '#ff3b30' : '#ffd700';
+                const glow = this.type === 'special' ? '#ff8a80' : '#fff9c4';
+                ctx.fillStyle = color; ctx.shadowColor = glow; ctx.shadowBlur = 15; ctx.fill();
+                ctx.beginPath(); ctx.moveTo(0, -this.radius * 0.6); ctx.lineTo(this.radius * 0.3, 0);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        class PowerUp {
+            constructor() {
+                this.radius = 15;
+                this.x = random(this.radius, canvas.width - this.radius);
+                this.y = -this.radius;
+                this.speedY = random(1.5, 3);
+                const types = ['shield', 'magnet', 'laser', 'bomb'];
+                this.type = types[Math.floor(Math.random() * types.length)];
+                this.markedForDeletion = false;
+                this.pulse = 0;
+            }
+            update() {
+                this.y += this.speedY; this.pulse += 0.1;
+                if (this.y > canvas.height + this.radius) this.markedForDeletion = true;
+            }
+            draw() {
+                ctx.save(); ctx.translate(this.x, this.y);
+                const scale = 1 + Math.sin(this.pulse) * 0.1;
+                ctx.scale(scale, scale);
+                
+                let color, icon;
+                if(this.type === 'shield') { color = '#00e5ff'; icon = '\uf3ed'; } 
+                else if(this.type === 'magnet') { color = '#b388ff'; icon = '\uf076'; } 
+                else if(this.type === 'laser') { color = '#ff1744'; icon = '\ue4dc'; } 
+                else { color = '#ff9100'; icon = '\uf1e2'; } 
+
+                ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${parseInt(color.slice(1,3),16)},${parseInt(color.slice(3,5),16)},${parseInt(color.slice(5,7),16)},0.3)`;
+                ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.shadowColor = color; ctx.shadowBlur = 15;
+                ctx.fill(); ctx.stroke();
+
+                ctx.font = '900 14px "Font Awesome 6 Free"';
+                ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.shadowBlur = 0;
+                ctx.fillText(icon, 0, 0);
+                ctx.restore();
+            }
+        }
+
+        let player = new Player();
+        let backgroundStars = Array.from({length: 100}, () => new Star());
+        let asteroids = [];
+        let crystals = [];
+        let powerups = [];
+        let particles = [];
+        let projectiles = [];
+
+        const keys = {};
+        window.addEventListener('keydown', e => { keys[e.code] = true; });
+        window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isPlaying) return;
+            const rect = canvas.getBoundingClientRect();
+            player.targetX = e.clientX - rect.left; player.targetY = e.clientY - rect.top;
+        });
+
+        const joystickZone = document.getElementById('joystick-zone');
+        let touchStartX, touchStartY, playerStartTargetX, playerStartTargetY;
+        window.addEventListener('touchstart', function detectTouch() { joystickZone.style.display = 'block'; window.removeEventListener('touchstart', detectTouch); }, { once: true });
+        joystickZone.addEventListener('touchstart', (e) => {
+            if (!isPlaying) return; e.preventDefault();
+            const touch = e.touches[0]; touchStartX = touch.clientX; touchStartY = touch.clientY;
+            playerStartTargetX = player.targetX; playerStartTargetY = player.targetY;
+        }, { passive: false });
+        joystickZone.addEventListener('touchmove', (e) => {
+            if (!isPlaying) return; e.preventDefault();
+            const touch = e.touches[0];
+            player.targetX = playerStartTargetX + (touch.clientX - touchStartX) * 1.5;
+            player.targetY = playerStartTargetY + (touch.clientY - touchStartY) * 1.5;
+        }, { passive: false });
+
+        function createParticles(x, y, color, isExplosion, count) {
+            for (let i = 0; i < count; i++) particles.push(new Particle(x, y, color, isExplosion));
+        }
+
+        function triggerScreenShake(frames) {
+            screenShakeFrames = frames;
+            container.classList.add('screen-shake');
+            setTimeout(() => container.classList.remove('screen-shake'), 400);
+        }
+
+        function updateUI() {
+            document.getElementById('score').innerText = score;
+            const energyFill = document.getElementById('energy-fill');
+            const max = getMaxEnergy();
+            const percentage = Math.max(0, (energy / max) * 100);
+            energyFill.style.width = `${percentage}%`;
+            document.getElementById('energy-text-val').innerText = Math.floor(energy);
+            document.getElementById('energy-text-max').innerText = max;
+
+            if (percentage < 25) {
+                energyFill.style.background = 'var(--danger-color)';
+                energyFill.style.boxShadow = '0 0 10px var(--danger-color)';
+                if (frameCount % 30 === 0) SFX.alarm(); 
+                if (frameCount % 60 === 0) triggerScreenShake(5); 
+            } else {
+                energyFill.style.background = 'linear-gradient(90deg, #ff3b30, #ffcc00, #34c759)';
+                energyFill.style.boxShadow = 'none';
+            }
+            
+            document.getElementById('hud-wallet').innerText = totalCrystals;
+        }
+
+        function updateBuffUI() {
+            document.getElementById('icon-shield').classList.toggle('active', player.buffs.shield > 0);
+            document.getElementById('icon-magnet').classList.toggle('active', player.buffs.magnet > 0);
+            document.getElementById('icon-laser').classList.toggle('active', player.buffs.laser > 0);
+        }
+
+        function spawnEntities() {
+            const spawnRate = Math.max(15, 50 - score / 100);
+            if (frameCount % Math.floor(spawnRate) === 0) asteroids.push(new Asteroid());
+            if (frameCount % 45 === 0) crystals.push(new Crystal());
+            
+            if (frameCount > 0 && frameCount % 600 === 0) {
+                powerups.push(new PowerUp());
+            }
+        }
+
+        function update() {
+            if (!isPlaying) return;
+            frameCount++;
+            difficultyMultiplier = 1 + score / 1000;
+
+            if (keys['ArrowLeft'] || keys['KeyA']) player.targetX -= 7;
+            if (keys['ArrowRight'] || keys['KeyD']) player.targetX += 7;
+            if (keys['ArrowUp'] || keys['KeyW']) player.targetY -= 7;
+            if (keys['ArrowDown'] || keys['KeyS']) player.targetY += 7;
+
+            player.update();
+            
+            if (frameCount % 60 === 0) {
+                energy -= getEngineDrain() * difficultyMultiplier;
+                updateUI();
+            }
+
+            if (energy <= 0) { gameOver(); return; }
+
+            spawnEntities();
+            backgroundStars.forEach(star => star.update());
+
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                let p = projectiles[i]; p.update();
+                for (let j = asteroids.length - 1; j >= 0; j--) {
+                    let a = asteroids[j];
+                    if (checkCollision(p, a)) {
+                        createParticles(a.x, a.y, '#5c6066', true, 15);
+                        createParticles(p.x, p.y, '#ff1744', true, 5);
+                        SFX.hit();
+                        score += 5; 
+                        a.markedForDeletion = true;
+                        p.markedForDeletion = true;
+                        break;
+                    }
+                }
+                if (p.markedForDeletion) projectiles.splice(i, 1);
+            }
+
+            for (let i = asteroids.length - 1; i >= 0; i--) {
+                let ast = asteroids[i]; ast.update();
+                if (checkCollision(player, ast)) {
+                    ast.markedForDeletion = true;
+                    
+                    if (player.buffs.shield > 0) {
+                        player.buffs.shield = 0;
+                        updateBuffUI();
+                        createParticles(ast.x, ast.y, '#00e5ff', true, 30);
+                        SFX.hit();
+                        triggerScreenShake(10);
+                    } else {
+                        createParticles(player.x, player.y, '#66fcf1', true, 20);
+                        createParticles(ast.x, ast.y, '#5c6066', true, 20);
+                        energy -= 30;
+                        SFX.explosion();
+                        triggerScreenShake(15);
+                        if (energy <= 0) { gameOver(); return; }
+                    }
+                    updateUI();
+                }
+                if (ast.markedForDeletion) asteroids.splice(i, 1);
+            }
+
+            for (let i = crystals.length - 1; i >= 0; i--) {
+                let cry = crystals[i];
+                cry.update(player.x, player.y, player.buffs.magnet > 0);
+                if (checkCollision(player, cry)) {
+                    let isSpecial = cry.type === 'special';
+                    createParticles(cry.x, cry.y, isSpecial ? '#ff3b30' : '#ffd700', false, 15);
+                    
+                    let earned = isSpecial ? 50 : 10;
+                    score += earned;
+                    totalCrystals += earned; 
+                    
+                    energy = Math.min(getMaxEnergy(), energy + (isSpecial ? 25 : 10));
+                    
+                    isSpecial ? SFX.pickupSpecial() : SFX.pickupNormal();
+                    updateUI();
+                    cry.markedForDeletion = true;
+
+                    if (score >= 500) { gameWin(); return; }
+                }
+                if (cry.markedForDeletion) crystals.splice(i, 1);
+            }
+
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                let pu = powerups[i]; pu.update();
+                if (checkCollision(player, pu)) {
+                    createParticles(pu.x, pu.y, '#ffffff', true, 20);
+                    SFX.pickupItem();
+                    
+                    if (pu.type === 'bomb') {
+                        asteroids.forEach(a => {
+                            createParticles(a.x, a.y, '#5c6066', true, 15);
+                            a.markedForDeletion = true;
+                            score += 5; 
+                        });
+                        SFX.explosion();
+                        triggerScreenShake(25);
+                        updateUI();
+                    } else {
+                        if(pu.type === 'shield') player.buffs.shield = 600;
+                        if(pu.type === 'magnet') player.buffs.magnet = 600;
+                        if(pu.type === 'laser') player.buffs.laser = 600;
+                        updateBuffUI();
+                    }
+                    
+                    pu.markedForDeletion = true;
+                }
+                if (pu.markedForDeletion) powerups.splice(i, 1);
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                if (particles[i].markedForDeletion) particles.splice(i, 1);
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.save();
+            if (screenShakeFrames > 0) {
+                const intensity = Math.min(screenShakeFrames, 10);
+                ctx.translate(random(-intensity, intensity), random(-intensity, intensity));
+                screenShakeFrames--;
+            }
+
+            backgroundStars.forEach(star => star.draw());
+
+            if (isPlaying) {
+                particles.forEach(p => p.draw());
+                projectiles.forEach(p => p.draw());
+                crystals.forEach(c => c.draw());
+                powerups.forEach(p => p.draw());
+                asteroids.forEach(a => a.draw());
+                player.draw();
+            } else {
+                 backgroundStars.forEach(star => star.update());
+            }
+            
+            ctx.restore();
+        }
+
+        function gameLoop() {
+            update(); draw();
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+
+        function initGame() {
+            score = 0; energy = getMaxEnergy(); frameCount = 0; difficultyMultiplier = 1; screenShakeFrames = 0;
+            player.reset(); updateBuffUI(); updateUI();
+            asteroids = []; crystals = []; powerups = []; particles = []; projectiles = [];
+        }
+
+        function startGame() {
+            initAudio(); initGame();
+            document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+            isPlaying = true;
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('end-wallet').innerText = totalCrystals;
+            document.getElementById('game-over-screen').classList.remove('hidden');
+            createParticles(player.x, player.y, '#66fcf1', true, 50);
+            createParticles(player.x, player.y, '#ff3b30', true, 50);
+            SFX.explosion(); triggerScreenShake(20); draw();
+            saveGame();
+        }
+
+        function gameWin() {
+            isPlaying = false;
+            document.getElementById('win-score').innerText = score;
+            document.getElementById('game-win-screen').classList.remove('hidden');
+            createParticles(player.x, player.y, '#34c759', true, 80);
+            createParticles(player.x, player.y, '#ffd700', true, 80);
+            SFX.pickupSpecial(); SFX.pickupSpecial(); draw();
+            saveGame();
+        }
+
+        function updateWalletUI() {
+            document.getElementById('start-wallet').innerText = totalCrystals;
+            document.getElementById('hud-wallet').innerText = totalCrystals;
+            document.getElementById('shop-wallet').innerText = totalCrystals;
+            
+            const energyCost = 100 * playerUpgrades.energyLvl;
+            const btnEnergy = document.getElementById('buy-energy');
+            document.getElementById('lvl-energy').innerText = `(Lv.${playerUpgrades.energyLvl})`;
+            if(playerUpgrades.energyLvl >= 5) { btnEnergy.innerText = "MAX"; btnEnergy.disabled = true; }
+            else { btnEnergy.innerHTML = `${energyCost} <i class="fa-solid fa-gem"></i>`; btnEnergy.disabled = totalCrystals < energyCost; }
+
+            const engineCost = 150 * playerUpgrades.engineLvl;
+            const btnEngine = document.getElementById('buy-engine');
+            document.getElementById('lvl-engine').innerText = `(Lv.${playerUpgrades.engineLvl})`;
+            if(playerUpgrades.engineLvl >= 5) { btnEngine.innerText = "MAX"; btnEngine.disabled = true; }
+            else { btnEngine.innerHTML = `${engineCost} <i class="fa-solid fa-gem"></i>`; btnEngine.disabled = totalCrystals < engineCost; }
+
+            const magnetCost = 80 * playerUpgrades.magnetLvl;
+            const btnMagnet = document.getElementById('buy-magnet');
+            document.getElementById('lvl-magnet').innerText = `(Lv.${playerUpgrades.magnetLvl})`;
+            if(playerUpgrades.magnetLvl >= 5) { btnMagnet.innerText = "MAX"; btnMagnet.disabled = true; }
+            else { btnMagnet.innerHTML = `${magnetCost} <i class="fa-solid fa-gem"></i>`; btnMagnet.disabled = totalCrystals < magnetCost; }
+
+            const btnRed = document.getElementById('buy-color-red');
+            if(playerUpgrades.hasRedSkin) {
+                if(playerUpgrades.equippedSkin === 'red') {
+                    btnRed.innerText = "已裝備"; btnRed.disabled = true;
+                } else {
+                    btnRed.innerText = "裝備"; btnRed.disabled = false;
+                }
+                document.getElementById('status-color-red').innerText = "(已解鎖)";
+            } else {
+                btnRed.innerHTML = `500 <i class="fa-solid fa-gem"></i>`;
+                btnRed.disabled = totalCrystals < 500;
+            }
+        }
+
+        function openShop() {
+            initAudio(); updateWalletUI();
+            document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+            document.getElementById('shop-screen').classList.remove('hidden');
+        }
+
+        function closeShop() {
+            document.getElementById('shop-screen').classList.add('hidden');
+            if (score === 0 && energy === getMaxEnergy()) document.getElementById('start-screen').classList.remove('hidden');
+            else if (score >= 500) document.getElementById('game-win-screen').classList.remove('hidden');
+            else document.getElementById('game-over-screen').classList.remove('hidden');
+        }
+
+        document.getElementById('buy-energy').addEventListener('click', () => {
+            const cost = 100 * playerUpgrades.energyLvl;
+            if(totalCrystals >= cost && playerUpgrades.energyLvl < 5) {
+                totalCrystals -= cost; playerUpgrades.energyLvl++; SFX.buy(); saveGame(); updateWalletUI();
+            }
+        });
+        document.getElementById('buy-engine').addEventListener('click', () => {
+            const cost = 150 * playerUpgrades.engineLvl;
+            if(totalCrystals >= cost && playerUpgrades.engineLvl < 5) {
+                totalCrystals -= cost; playerUpgrades.engineLvl++; SFX.buy(); saveGame(); updateWalletUI();
+            }
+        });
+        document.getElementById('buy-magnet').addEventListener('click', () => {
+            const cost = 80 * playerUpgrades.magnetLvl;
+            if(totalCrystals >= cost && playerUpgrades.magnetLvl < 5) {
+                totalCrystals -= cost; playerUpgrades.magnetLvl++; SFX.buy(); saveGame(); updateWalletUI();
+            }
+        });
+        document.getElementById('buy-color-red').addEventListener('click', () => {
+            if(!playerUpgrades.hasRedSkin && totalCrystals >= 500) {
+                totalCrystals -= 500; playerUpgrades.hasRedSkin = true; playerUpgrades.equippedSkin = 'red'; SFX.buy(); saveGame(); updateWalletUI();
+            } else if (playerUpgrades.hasRedSkin) {
+                playerUpgrades.equippedSkin = 'red'; SFX.buy(); saveGame(); updateWalletUI();
+            }
+        });
+
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+        document.getElementById('win-restart-btn').addEventListener('click', startGame);
+        document.getElementById('open-shop-btn').addEventListener('click', openShop);
+        document.getElementById('open-shop-btn-end').addEventListener('click', openShop);
+        document.getElementById('open-shop-btn-win').addEventListener('click', openShop);
+        document.getElementById('close-shop-btn').addEventListener('click', closeShop);
+
+        updateWalletUI();
+        gameLoop();
+
+    </script>
+</body>
+</html>
