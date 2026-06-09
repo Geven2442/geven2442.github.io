@@ -46,7 +46,13 @@
             background: radial-gradient(circle at center, #1f2833 0%, #0b0c10 100%);
         }
 
-        canvas { display: block; width: 100%; height: 100%; }
+        /* 效能優化：讓畫布透過 CSS 滿版拉伸，內部保持低解析度高畫質執行 */
+        canvas { 
+            display: block; 
+            width: 100%; 
+            height: 100%; 
+            object-fit: fill;
+        }
 
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -125,11 +131,6 @@
             text-transform: uppercase; letter-spacing: 5px; margin-bottom: 20px;
             text-align: center; text-shadow: 0 0 20px var(--primary-color), 0 0 40px var(--secondary-color);
             animation: pulseText 2s infinite alternate;
-        }
-
-        @keyframes pulseText {
-            0% { text-shadow: 0 0 10px var(--primary-color); transform: scale(1); }
-            100% { text-shadow: 0 0 25px var(--primary-color), 0 0 50px var(--secondary-color); transform: scale(1.05); }
         }
 
         .btn-group {
@@ -238,7 +239,7 @@
 
         <div id="game-over-screen" class="overlay hidden">
             <h1 class="title" style="color: var(--danger-color); text-shadow: 0 0 20px var(--danger-color);">船體破裂</h1>
-            <p id="trash-talk-msg" style="color: #ff8a80; font-size: 1rem; font-style: italic; margin-bottom: 15px; text-align: center; max-width: 85%; line-height: 1.4; min-height: 3rem; display: flex; align-items: center; justify-content: center行;"></p>
+            <p id="trash-talk-msg" style="color: #ff8a80; font-size: 1rem; font-style: italic; margin-bottom: 15px; text-align: center; max-width: 85%; line-height: 1.4; min-height: 3rem; display: flex; align-items: center; justify-content: center;"></p>
             <p style="font-size: 1.4rem; margin-bottom: 5px;">本次得分: <span id="final-score" style="color: var(--crystal-color); font-weight: bold;">0</span></p>
             <p id="high-score-display" style="font-size: 1.1rem; margin-bottom: 5px; display: none;">最高紀錄: <span id="high-score-val" style="color: var(--primary-color); font-weight: bold;">0</span></p>
             <p style="font-size: 1.1rem; margin-bottom: 15px;">獲得水晶: <i class="fa-solid fa-gem" style="color: var(--crystal-color);"></i> <span id="final-earned" style="color: var(--crystal-color); font-weight: bold;">0</span></p>
@@ -348,8 +349,9 @@
             buy: () => { playTone(1000, 'sine', 0.1, 0.1); setTimeout(() => playTone(1500, 'sine', 0.2, 0.1), 100); }
         };
 
+        // 核心優化：關閉 Canvas 透明混合通道，直接啟用高效硬體加速
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
         const container = document.getElementById('game-container');
         
         let gameLoopId;
@@ -423,9 +425,10 @@
         
         let energy = getMaxEnergy();
 
+        // 核心優化：將畫布解析度永久鎖定在極輕量網格，完全消滅手機 GPU 填滿率負載
         function resizeCanvas() {
-            canvas.width = container.clientWidth;
-            canvas.height = container.clientHeight;
+            canvas.width = 480;
+            canvas.height = 800;
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
@@ -442,7 +445,6 @@
             reset() { this.x = random(0, canvas.width); this.y = -10; this.size = random(1, 2.5); this.speed = this.size * random(1, 2); }
             update() { this.y += this.speed * (isPlaying && !isPaused ? (1 + score/100) : 1); if (this.y > canvas.height) this.reset(); }
             draw() { 
-                // 優化：Star.draw() 不再各自呼叫 fillStyle，由核心主迴圈統一著色
                 ctx.fillRect(this.x, this.y, this.size, this.size); 
             }
         }
@@ -450,7 +452,7 @@
         class Particle {
             constructor(x, y, color, isExplosion, isTrail = false) {
                 this.x = x; this.y = y; this.color = color;
-                this.radius = isTrail ? random(1, 1.8) : random(1.8, 3.2);
+                this.radius = isTrail ? random(1, 2) : random(1.8, 3.2);
                 const angle = random(0, Math.PI * 2);
                 const speed = isExplosion ? random(2, 5.5) : random(0.5, 1.2);
                 this.vx = Math.cos(angle) * speed;
@@ -464,7 +466,6 @@
                 if (this.life <= 0) this.markedForDeletion = true;
             }
             draw() {
-                // 手機版優化：直接利用尺寸縮放代替 Alpha 透明度變更，大幅提升手機解算速度
                 ctx.fillStyle = this.color;
                 const sz = this.radius * (isMobileDevice ? this.life : 1);
                 if (!isMobileDevice) ctx.globalAlpha = Math.max(0, this.life);
@@ -510,7 +511,7 @@
 
                 let trailRate = isMobileDevice ? 5 : 2;
                 if (isPlaying && !isPaused && this.thrustFrames % trailRate === 0) {
-                    if (isMobileDevice && particles.length > 10) return; // 嚴格控制手機端粒子上限
+                    if (isMobileDevice && particles.length > 10) return; 
                     const trailColor = playerUpgrades.equippedSkin === 'red' ? '#ff3b30' : '#b388ff';
                     particles.push(new Particle(this.x + random(-3, 3), this.y + 8, trailColor, false, true));
                 }
@@ -546,7 +547,6 @@
                 ctx.lineTo(-this.radius, this.radius); 
                 ctx.closePath();
                 
-                // 手機端極限優化：完全捨棄 Gradient 動態物件創建，改用高對比純色渲染，防止記憶體回收停頓
                 if (isMobileDevice) {
                     ctx.fillStyle = playerUpgrades.equippedSkin === 'red' ? '#ff3b30' : '#b388ff';
                 } else {
@@ -606,7 +606,6 @@
                 ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
                 ctx.fillStyle = '#5c6066'; 
                 
-                // 手機端極限優化：隕石直接畫完美方形填充，完全免去複雜幾何路徑動態解算
                 if (isMobileDevice) {
                     ctx.fillRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2);
                 } else {
@@ -678,20 +677,29 @@
                 const scale = 1 + Math.sin(this.pulse) * 0.08;
                 ctx.scale(scale, scale);
                 
-                let color, icon;
-                if(this.type === 'shield') { color = '#00e5ff'; icon = '\uf3ed'; } 
-                else if(this.type === 'magnet') { color = '#b388ff'; icon = '\uf076'; } 
-                else if(this.type === 'laser') { color = '#ff1744'; icon = '\ue4dc'; } 
-                else { color = '#ff9100'; icon = '\uf1e2'; } 
+                let color;
+                if(this.type === 'shield') color = '#00e5ff'; 
+                else if(this.type === 'magnet') color = '#b388ff'; 
+                else if(this.type === 'laser') color = '#ff1744'; 
+                else color = '#ff9100'; 
 
                 ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
                 ctx.fillStyle = `rgba(${parseInt(color.slice(1,3),16)},${parseInt(color.slice(3,5),16)},${parseInt(color.slice(5,7),16)},0.2)`;
                 ctx.strokeStyle = color; ctx.lineWidth = 2; 
                 ctx.fill(); ctx.stroke();
 
-                ctx.font = '900 13px "Font Awesome 6 Free"';
-                ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText(icon, 0, 0);
+                // 終極核心修正：用純幾何圖案代替 Canvas 內的 FontAwesome 文字渲染，安卓效能直接解封
+                ctx.fillStyle = color;
+                ctx.lineWidth = 2;
+                if (this.type === 'shield') {
+                    ctx.fillRect(-6, -2, 12, 4); ctx.fillRect(-2, -6, 4, 12); // 十字符號
+                } else if (this.type === 'magnet') {
+                    ctx.strokeRect(-5, -5, 10, 10); // 雙重線方塊
+                } else if (this.type === 'laser') {
+                    ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill(); // 核心圓點
+                } else {
+                    ctx.fillRect(-4, -4, 8, 8); // 實心核心
+                }
                 ctx.restore();
             }
         }
@@ -709,26 +717,28 @@
         window.addEventListener('keydown', e => { keys[e.code] = true; });
         window.addEventListener('keyup', e => { keys[e.code] = false; });
 
+        // 核心優化：引入幾何畫面拉伸比例尺，精準換算滑鼠座標
         canvas.addEventListener('mousemove', (e) => {
             if (!isPlaying || isPaused) return;
             const rect = canvas.getBoundingClientRect();
-            player.targetX = e.clientX - rect.left; player.targetY = e.clientY - rect.top;
+            player.targetX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            player.targetY = (e.clientY - rect.top) * (canvas.height / rect.height);
         });
 
-        // 核心優化：觸控追蹤直接無條件綁定在頂層 window，破除任何 HTML 排版外框的隱形點擊攔截！
+        // 終極核心修正：觸控直接綁定全域視窗，並套用比例尺，徹底擺脫任何隱形 HTML 外框的點擊攔截
         window.addEventListener('touchstart', handleTouch, { passive: false });
         window.addEventListener('touchmove', handleTouch, { passive: false });
 
         function handleTouch(e) {
             if (!isPlaying || isPaused) return;
             
-            // 唯有在非按鈕點擊時才進行阻斷傳遞與跟隨
-            if (e.target.tagName !== 'BUTTON' && !e.target.closest('.stat-box')) {
+            if (e.target.tagName !== 'BUTTON' && !e.target.closest('.stat-box') && !e.target.closest('#pause-btn')) {
                 e.preventDefault();
                 const rect = canvas.getBoundingClientRect();
                 const touch = e.touches[0];
-                player.targetX = touch.clientX - rect.left;
-                player.targetY = touch.clientY - rect.top;
+                // 依據比例尺完美映射到 480x800 畫布上
+                player.targetX = (touch.clientX - rect.left) * (canvas.width / rect.width);
+                player.targetY = (touch.clientY - rect.top) * (canvas.height / rect.height);
             }
         }
 
@@ -738,7 +748,7 @@
         }
 
         function triggerScreenShake(frames) {
-            if (isMobileDevice) return; // 手機端直接關閉鏡頭震動防止過載
+            if (isMobileDevice) return; 
             screenShakeFrames = frames;
             container.classList.add('screen-shake');
             setTimeout(() => container.classList.remove('screen-shake'), 400);
@@ -937,7 +947,9 @@
             ctx.shadowBlur = 0;
             ctx.shadowColor = "transparent";
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // 因為 alpha: false，必須手動刷滿底色清除上一幀殘影
+            ctx.fillStyle = "#0b0c10";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.save();
 
             // 星空 Batch Rendering 優化：統一樣式，不重複變更 ctx 樣式管線
@@ -1104,7 +1116,7 @@
         });
         document.getElementById('buy-engine').addEventListener('click', () => {
             const cost = 150 * playerUpgrades.engineLvl;
-            if(totalCrystals >= cost && playerUpgrades.engineLvl < 5) {
+            if(totalCrystals >= cost && playerUpgrades.energyLvl < 5) {
                 totalCrystals -= cost; playerUpgrades.engineLvl++; SFX.buy(); saveGame(); updateWalletUI();
             }
         });
