@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>星際拾荒者</title>
-    <link href="https://fonts.googleapis.com/css2 family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>星際拾荒者 - 終極升級版</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
@@ -66,13 +66,12 @@
             text-shadow: 0 0 10px var(--primary-color); letter-spacing: 2px;
             background: rgba(11, 12, 16, 0.7); padding: 5px 20px; border-radius: 20px; 
             border: 1px solid var(--secondary-color);
-            pointer-events: auto; /* 允許點擊暫停或切換 */
+            pointer-events: auto;
         }
 
         .hud {
             display: flex; justify-content: space-between; align-items: flex-start;
-            width: 100%;
-            font-size: 1.1rem; font-weight: 700;
+            width: 100%; font-size: 1.1rem; font-weight: 700;
         }
 
         .hud-left, .hud-right { display: flex; flex-direction: column; gap: 8px; }
@@ -176,7 +175,6 @@
 <body>
 
     <div id="game-container">
-        <!-- 移除舊的搖桿 HTML，完全釋放觸控阻擋 -->
         <canvas id="gameCanvas"></canvas>
 
         <div id="ui-layer">
@@ -230,7 +228,7 @@
         </div>
 
         <div id="pause-screen" class="overlay hidden">
-            <h1 class="title">遊戲暫停</h1>
+            <h1 class="title">系統暫停</h1>
             <div class="btn-group" style="flex-direction: column; align-items: center; width: 220px;">
                 <button class="btn" id="resume-btn" style="width: 100%;">繼續遊戲 <i class="fa-solid fa-play"></i></button>
                 <button class="btn outline" id="restart-pause-btn" style="width: 100%;">重新部署 <i class="fa-solid fa-rotate-right"></i></button>
@@ -240,7 +238,7 @@
 
         <div id="game-over-screen" class="overlay hidden">
             <h1 class="title" style="color: var(--danger-color); text-shadow: 0 0 20px var(--danger-color);">船體破裂</h1>
-            <p id="trash-talk-msg" style="color: #ff8a80; font-size: 1rem; font-style: italic; margin-bottom: 15px; text-align: center; max-width: 85%; line-height: 1.4; min-height: 3rem; display: flex; align-items: center; justify-content: center;"></p>
+            <p id="trash-talk-msg" style="color: #ff8a80; font-size: 1rem; font-style: italic; margin-bottom: 15px; text-align: center; max-width: 85%; line-height: 1.4; min-height: 3rem; display: flex; align-items: center; justify-content: center行;"></p>
             <p style="font-size: 1.4rem; margin-bottom: 5px;">本次得分: <span id="final-score" style="color: var(--crystal-color); font-weight: bold;">0</span></p>
             <p id="high-score-display" style="font-size: 1.1rem; margin-bottom: 5px; display: none;">最高紀錄: <span id="high-score-val" style="color: var(--primary-color); font-weight: bold;">0</span></p>
             <p style="font-size: 1.1rem; margin-bottom: 15px;">獲得水晶: <i class="fa-solid fa-gem" style="color: var(--crystal-color);"></i> <span id="final-earned" style="color: var(--crystal-color); font-weight: bold;">0</span></p>
@@ -310,7 +308,6 @@
     </div>
 
     <script>
-        // 核心硬體效能偵測
         const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         let audioCtx;
@@ -400,8 +397,8 @@
             "建議下一局改用滑鼠左鍵狂點試試看，可能都比現在靈活。",
             "看來你對宇宙的唯一貢獻，就是製造了更多的星際碎片。",
             "你是來星際拾荒的，還是來給外星人表演當場去世的？",
-            "剛才那顆隕石說它根本沒用力，是你自己倒貼的。",
-            "這技術，連黑洞看了都嫌嫌，想把你吐出來。",
+            "剛才那顆隕石說它根本沒用力，是用戶自己倒貼的。",
+            "這技術，連黑洞看了都嫌棄，想把你吐出來。",
             "如果手殘是一種超能力，你現在已經是復仇者聯盟主席了。",
             "有想過換個遊戲玩嗎？比如踩地雷可能比較適合你。"
         ];
@@ -426,15 +423,6 @@
         
         let energy = getMaxEnergy();
 
-        function saveGame() {
-            try {
-                localStorage.setItem('stellar_wallet', totalCrystals.toString());
-                localStorage.setItem('stellar_highscore', endlessHighScore.toString());
-                localStorage.setItem('stellar_upgrades', JSON.stringify(playerUpgrades));
-            } catch (e) {}
-            updateWalletUI();
-        }
-
         function resizeCanvas() {
             canvas.width = container.clientWidth;
             canvas.height = container.clientHeight;
@@ -451,11 +439,10 @@
 
         class Star {
             constructor() { this.reset(); this.y = random(0, canvas.height); }
-            reset() { this.x = random(0, canvas.width); this.y = -10; this.size = random(1, 2.5); this.speed = this.size * random(1, 2.5); this.color = `rgba(255, 255, 255, ${random(0.3, 0.7)})`; }
+            reset() { this.x = random(0, canvas.width); this.y = -10; this.size = random(1, 2.5); this.speed = this.size * random(1, 2); }
             update() { this.y += this.speed * (isPlaying && !isPaused ? (1 + score/100) : 1); if (this.y > canvas.height) this.reset(); }
             draw() { 
-                ctx.fillStyle = this.color; 
-                // 效能關鍵優化：用 fillRect (矩形) 代替 arc (圓形)，效能飆升
+                // 優化：Star.draw() 不再各自呼叫 fillStyle，由核心主迴圈統一著色
                 ctx.fillRect(this.x, this.y, this.size, this.size); 
             }
         }
@@ -463,9 +450,9 @@
         class Particle {
             constructor(x, y, color, isExplosion, isTrail = false) {
                 this.x = x; this.y = y; this.color = color;
-                this.radius = isTrail ? random(1, 2) : random(2, 3.5);
+                this.radius = isTrail ? random(1, 1.8) : random(1.8, 3.2);
                 const angle = random(0, Math.PI * 2);
-                const speed = isExplosion ? random(2, 6) : random(0.5, 1.2);
+                const speed = isExplosion ? random(2, 5.5) : random(0.5, 1.2);
                 this.vx = Math.cos(angle) * speed;
                 this.vy = isTrail ? random(1, 2) : Math.sin(angle) * speed;
                 this.life = 1.0;
@@ -477,15 +464,12 @@
                 if (this.life <= 0) this.markedForDeletion = true;
             }
             draw() {
-                ctx.globalAlpha = Math.max(0, this.life);
+                // 手機版優化：直接利用尺寸縮放代替 Alpha 透明度變更，大幅提升手機解算速度
                 ctx.fillStyle = this.color;
-                // 手機端拖尾粒子同樣改用矩形繪製
-                if (isMobileDevice) {
-                    ctx.fillRect(this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
-                } else {
-                    ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
-                }
-                ctx.globalAlpha = 1.0;
+                const sz = this.radius * (isMobileDevice ? this.life : 1);
+                if (!isMobileDevice) ctx.globalAlpha = Math.max(0, this.life);
+                ctx.fillRect(this.x - sz, this.y - sz, sz * 2, sz * 2);
+                if (!isMobileDevice) ctx.globalAlpha = 1.0;
             }
         }
 
@@ -501,7 +485,6 @@
             draw() {
                 ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
                 ctx.fillStyle = '#ff1744';
-                if (!isMobileDevice) { ctx.shadowColor = '#ff1744'; ctx.shadowBlur = 10; }
                 ctx.fill(); 
             }
         }
@@ -510,7 +493,7 @@
             constructor() {
                 this.radius = 14;
                 this.reset();
-                this.speed = 0.2; // 提高跟隨靈敏度
+                this.speed = 0.22; 
             }
             reset() {
                 this.x = canvas.width / 2; this.y = canvas.height * 0.8;
@@ -525,10 +508,11 @@
                 this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
                 this.thrustFrames++;
 
-                let trailRate = isMobileDevice ? 4 : 2;
+                let trailRate = isMobileDevice ? 5 : 2;
                 if (isPlaying && !isPaused && this.thrustFrames % trailRate === 0) {
+                    if (isMobileDevice && particles.length > 10) return; // 嚴格控制手機端粒子上限
                     const trailColor = playerUpgrades.equippedSkin === 'red' ? '#ff3b30' : '#b388ff';
-                    particles.push(new Particle(this.x + random(-4, 4), this.y + 8, trailColor, false, true));
+                    particles.push(new Particle(this.x + random(-3, 3), this.y + 8, trailColor, false, true));
                 }
 
                 for (let buff in this.buffs) {
@@ -550,9 +534,9 @@
                 ctx.rotate(tilt);
 
                 if (this.buffs.magnet > 0) {
-                    ctx.beginPath(); ctx.arc(0, 0, this.radius + 25 + Math.sin(this.thrustFrames * 0.1) * 8, 0, Math.PI * 2);
-                    ctx.fillStyle = 'rgba(179, 136, 255, 0.08)'; ctx.fill();
-                    ctx.strokeStyle = 'rgba(179, 136, 255, 0.4)'; ctx.lineWidth = 1; ctx.stroke();
+                    ctx.beginPath(); ctx.arc(0, 0, this.radius + 20 + Math.sin(this.thrustFrames * 0.1) * 6, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(179, 136, 255, 0.06)'; ctx.fill();
+                    ctx.strokeStyle = 'rgba(179, 136, 255, 0.3)'; ctx.lineWidth = 1; ctx.stroke();
                 }
 
                 ctx.beginPath();
@@ -562,24 +546,22 @@
                 ctx.lineTo(-this.radius, this.radius); 
                 ctx.closePath();
                 
-                const gradient = ctx.createLinearGradient(0, -this.radius*1.5, 0, this.radius);
-                gradient.addColorStop(0, '#ffffff');
-                
-                let flameColor, flameShadow;
-
-                if(playerUpgrades.equippedSkin === 'red') {
-                    gradient.addColorStop(0.3, '#ff3b30'); gradient.addColorStop(1, '#8a0000');
-                    if (!isMobileDevice) { ctx.shadowColor = '#ff3b30'; ctx.shadowBlur = 25; }
-                    flameColor = 'rgba(255, 50, 0, 0.9)'; 
-                    flameShadow = '#ff0000';
+                // 手機端極限優化：完全捨棄 Gradient 動態物件創建，改用高對比純色渲染，防止記憶體回收停頓
+                if (isMobileDevice) {
+                    ctx.fillStyle = playerUpgrades.equippedSkin === 'red' ? '#ff3b30' : '#b388ff';
                 } else {
-                    gradient.addColorStop(0.3, '#b388ff'); gradient.addColorStop(1, '#7c4dff');
-                    if (!isMobileDevice) { ctx.shadowColor = '#b388ff'; ctx.shadowBlur = 15; }
-                    flameColor = 'rgba(179, 136, 255, 0.8)'; 
-                    flameShadow = '#7c4dff';
+                    const gradient = ctx.createLinearGradient(0, -this.radius*1.5, 0, this.radius);
+                    gradient.addColorStop(0, '#ffffff');
+                    if (playerUpgrades.equippedSkin === 'red') {
+                        gradient.addColorStop(0.3, '#ff3b30'); gradient.addColorStop(1, '#8a0000');
+                        ctx.shadowColor = '#ff3b30'; ctx.shadowBlur = 25;
+                    } else {
+                        gradient.addColorStop(0.3, '#b388ff'); gradient.addColorStop(1, '#7c4dff');
+                        ctx.shadowColor = '#b388ff'; ctx.shadowBlur = 15;
+                    }
+                    ctx.fillStyle = gradient;
                 }
                 
-                ctx.fillStyle = gradient; 
                 ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
 
                 if (this.thrustFrames % 4 < 2) {
@@ -587,15 +569,13 @@
                     const flameLen = playerUpgrades.equippedSkin === 'red' ? random(5, 12) : random(0, 8);
                     ctx.lineTo(0, this.radius * 1.7 + flameLen); 
                     ctx.lineTo(this.radius * 0.5, this.radius * 0.8);
-                    ctx.fillStyle = flameColor; 
-                    if (!isMobileDevice) { ctx.shadowColor = flameShadow; ctx.shadowBlur = 20; }
+                    ctx.fillStyle = playerUpgrades.equippedSkin === 'red' ? '#ff3b30' : 'rgba(179, 136, 255, 0.8)'; 
                     ctx.fill();
                 }
 
                 if (this.buffs.shield > 0) {
                     ctx.beginPath(); ctx.arc(0, 0, this.radius + 8, 0, Math.PI * 2);
                     ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 2.5; 
-                    if (!isMobileDevice) { ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 12; }
                     ctx.fillStyle = 'rgba(0, 229, 255, 0.12)'; ctx.fill(); ctx.stroke();
                 }
 
@@ -605,15 +585,15 @@
 
         class Asteroid {
             constructor() {
-                this.radius = random(14, 30);
+                this.radius = random(14, 28);
                 this.x = random(this.radius, canvas.width - this.radius);
                 this.y = -this.radius - 50;
-                this.speedY = random(2, 4.2) * difficultyMultiplier;
-                this.speedX = random(-0.7, 0.7) * difficultyMultiplier;
+                this.speedY = random(2, 4) * difficultyMultiplier;
+                this.speedX = random(-0.6, 0.6) * difficultyMultiplier;
                 this.rotation = random(0, Math.PI * 2);
                 this.rotationSpeed = random(-0.03, 0.03);
-                this.vertices = Math.floor(random(5, 8));
-                this.offsets = Array.from({length: this.vertices}, () => random(0.75, 1.1));
+                this.vertices = Math.floor(random(5, 7));
+                this.offsets = Array.from({length: this.vertices}, () => random(0.8, 1.1));
                 this.markedForDeletion = false;
             }
             update() {
@@ -624,19 +604,21 @@
             }
             draw() {
                 ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
-                ctx.beginPath();
-                for (let i = 0; i < this.vertices; i++) {
-                    const angle = (i / this.vertices) * Math.PI * 2;
-                    const r = this.radius * this.offsets[i];
-                    if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
-                    else ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
-                }
-                ctx.closePath();
                 ctx.fillStyle = '#5c6066'; 
-                if (!isMobileDevice) { ctx.shadowColor = '#2b3036'; ctx.shadowBlur = 4; }
-                ctx.fill();
-                ctx.beginPath(); ctx.moveTo(0, -this.radius * 0.7); ctx.lineTo(this.radius * 0.3, 0);
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)'; ctx.lineWidth = 1.5; ctx.stroke();
+                
+                // 手機端極限優化：隕石直接畫完美方形填充，完全免去複雜幾何路徑動態解算
+                if (isMobileDevice) {
+                    ctx.fillRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2);
+                } else {
+                    ctx.beginPath();
+                    for (let i = 0; i < this.vertices; i++) {
+                        const angle = (i / this.vertices) * Math.PI * 2;
+                        const r = this.radius * this.offsets[i];
+                        if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                        else ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                    }
+                    ctx.closePath(); ctx.fill();
+                }
                 ctx.restore();
             }
         }
@@ -668,13 +650,10 @@
             }
             draw() {
                 ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
+                ctx.fillStyle = this.type === 'special' ? '#ff3b30' : '#ffd700';
                 ctx.beginPath(); ctx.moveTo(0, -this.radius); ctx.lineTo(this.radius * 0.7, 0);
                 ctx.lineTo(0, this.radius); ctx.lineTo(-this.radius * 0.7, 0); ctx.closePath();
-                const color = this.type === 'special' ? '#ff3b30' : '#ffd700';
-                ctx.fillStyle = color; 
                 ctx.fill();
-                ctx.beginPath(); ctx.moveTo(0, -this.radius * 0.5); ctx.lineTo(this.radius * 0.25, 0);
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)'; ctx.lineWidth = 1.5; ctx.stroke();
                 ctx.restore();
             }
         }
@@ -718,7 +697,7 @@
         }
 
         let player = new Player();
-        let maxStars = isMobileDevice ? 30 : 80; // 降低手機端星星總數
+        let maxStars = isMobileDevice ? 25 : 75; 
         let backgroundStars = Array.from({length: maxStars}, () => new Star());
         let asteroids = [];
         let crystals = [];
@@ -736,25 +715,30 @@
             player.targetX = e.clientX - rect.left; player.targetY = e.clientY - rect.top;
         });
 
-        // 修正：將操控權重直接綁定在 canvas 整體畫布，實現跨圖層絕對不卡死、直接跟隨
-        canvas.addEventListener('touchstart', handleTouch, { passive: false });
-        canvas.addEventListener('touchmove', handleTouch, { passive: false });
+        // 核心優化：觸控追蹤直接無條件綁定在頂層 window，破除任何 HTML 排版外框的隱形點擊攔截！
+        window.addEventListener('touchstart', handleTouch, { passive: false });
+        window.addEventListener('touchmove', handleTouch, { passive: false });
 
         function handleTouch(e) {
             if (!isPlaying || isPaused) return;
-            e.preventDefault(); // 阻止頁面滾動與縮放
-            const rect = canvas.getBoundingClientRect();
-            const touch = e.touches[0];
-            player.targetX = touch.clientX - rect.left;
-            player.targetY = touch.clientY - rect.top;
+            
+            // 唯有在非按鈕點擊時才進行阻斷傳遞與跟隨
+            if (e.target.tagName !== 'BUTTON' && !e.target.closest('.stat-box')) {
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                player.targetX = touch.clientX - rect.left;
+                player.targetY = touch.clientY - rect.top;
+            }
         }
 
         function createParticles(x, y, color, isExplosion, count) {
-            let finalCount = isMobileDevice ? Math.floor(count * 0.4) : count;
+            let finalCount = isMobileDevice ? Math.floor(count * 0.35) : count;
             for (let i = 0; i < finalCount; i++) particles.push(new Particle(x, y, color, isExplosion));
         }
 
         function triggerScreenShake(frames) {
+            if (isMobileDevice) return; // 手機端直接關閉鏡頭震動防止過載
             screenShakeFrames = frames;
             container.classList.add('screen-shake');
             setTimeout(() => container.classList.remove('screen-shake'), 400);
@@ -762,7 +746,6 @@
 
         function updateUI() {
             document.getElementById('score').innerText = score;
-            
             document.getElementById('mode-display').innerText = currentMode === 'endless' ? '無盡模式' : `第 ${currentLevel} 關`;
             const targetScoreUI = document.getElementById('target-score');
             const highScoreUI = document.getElementById('hud-high-score');
@@ -787,11 +770,9 @@
             if (percentage < 25) {
                 energyFill.style.background = 'var(--danger-color)';
                 if (!isPaused && frameCount % 30 === 0) SFX.alarm(); 
-                if (!isPaused && frameCount % 60 === 0) triggerScreenShake(5); 
             } else {
                 energyFill.style.background = 'linear-gradient(90deg, #ff3b30, #ffcc00, #34c759)';
             }
-            
             document.getElementById('hud-wallet').innerText = totalCrystals;
         }
 
@@ -854,7 +835,6 @@
 
                         a.markedForDeletion = true;
                         p.markedForDeletion = true;
-                        
                         checkLevelWin();
                         break;
                     }
@@ -870,18 +850,16 @@
                     if (player.buffs.shield > 0) {
                         player.buffs.shield = 0;
                         updateBuffUI();
-                        createParticles(ast.x, ast.y, '#00e5ff', true, 18);
+                        createParticles(ast.x, ast.y, '#00e5ff', true, 15);
                         SFX.hit();
-                        triggerScreenShake(10);
                     } else {
-                        createParticles(player.x, player.y, '#b388ff', true, 12);
-                        createParticles(ast.x, ast.y, '#5c6066', true, 12);
+                        createParticles(player.x, player.y, '#b388ff', true, 10);
+                        createParticles(ast.x, ast.y, '#5c6066', true, 10);
                         
                         let dmg = playerUpgrades.equippedSkin === 'red' ? 20 : 30;
                         energy -= dmg;
                         
                         SFX.explosion();
-                        triggerScreenShake(15);
                         if (energy <= 0) { gameOver(); return; }
                     }
                     updateUI();
@@ -894,7 +872,7 @@
                 cry.update(player.x, player.y, player.buffs.magnet > 0);
                 if (checkCollision(player, cry)) {
                     let isSpecial = cry.type === 'special';
-                    createParticles(cry.x, cry.y, isSpecial ? '#ff3b30' : '#ffd700', false, 8);
+                    createParticles(cry.x, cry.y, isSpecial ? '#ff3b30' : '#ffd700', false, 6);
                     
                     let baseEarn = isSpecial ? 50 : 10;
                     let earned = playerUpgrades.equippedSkin === 'red' ? Math.floor(baseEarn * 1.2) : baseEarn;
@@ -908,7 +886,6 @@
                     isSpecial ? SFX.pickupSpecial() : SFX.pickupNormal();
                     updateUI();
                     cry.markedForDeletion = true;
-
                     checkLevelWin();
                 }
                 if (cry.markedForDeletion) crystals.splice(i, 1);
@@ -917,12 +894,12 @@
             for (let i = powerups.length - 1; i >= 0; i--) {
                 let pu = powerups[i]; pu.update();
                 if (checkCollision(player, pu)) {
-                    createParticles(pu.x, pu.y, '#ffffff', true, 12);
+                    createParticles(pu.x, pu.y, '#ffffff', true, 10);
                     SFX.pickupItem();
                     
                     if (pu.type === 'bomb') {
                         asteroids.forEach(a => {
-                            createParticles(a.x, a.y, '#5c6066', true, 10);
+                            createParticles(a.x, a.y, '#5c6066', true, 8);
                             a.markedForDeletion = true;
                             let bombEarn = playerUpgrades.equippedSkin === 'red' ? 6 : 5;
                             score += bombEarn; 
@@ -930,7 +907,6 @@
                             crystalsEarnedThisRound += bombEarn;
                         });
                         SFX.explosion();
-                        triggerScreenShake(20);
                         updateUI();
                         checkLevelWin();
                     } else {
@@ -939,7 +915,6 @@
                         if(pu.type === 'laser') player.buffs.laser = 600;
                         updateBuffUI();
                     }
-                    
                     pu.markedForDeletion = true;
                 }
                 if (pu.markedForDeletion) powerups.splice(i, 1);
@@ -958,19 +933,15 @@
         }
 
         function draw() {
-            // 核心優化：每一幀強制關閉陰影渲染，防堵手機端效能漏洞
+            // 核心優化：切斷硬體陰影模糊解算，拔除超重負載
             ctx.shadowBlur = 0;
             ctx.shadowColor = "transparent";
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
             ctx.save();
-            if (screenShakeFrames > 0) {
-                const intensity = Math.min(screenShakeFrames, 6);
-                ctx.translate(random(-intensity, intensity), random(-intensity, intensity));
-                screenShakeFrames--;
-            }
 
+            // 星空 Batch Rendering 優化：統一樣式，不重複變更 ctx 樣式管線
+            ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
             backgroundStars.forEach(star => star.draw());
 
             if (isPlaying) {
@@ -983,7 +954,6 @@
             } else {
                  backgroundStars.forEach(star => star.update());
             }
-            
             ctx.restore();
         }
 
@@ -1032,9 +1002,8 @@
             document.getElementById('game-over-screen').classList.remove('hidden');
             
             const expColor = playerUpgrades.equippedSkin === 'red' ? '#ff3b30' : '#b388ff';
-            createParticles(player.x, player.y, expColor, true, 30);
-            createParticles(player.x, player.y, '#ffffff', true, 30);
-            SFX.explosion(); triggerScreenShake(20); draw();
+            createParticles(player.x, player.y, expColor, true, 25);
+            SFX.explosion(); draw();
             saveGame();
         }
 
@@ -1046,9 +1015,8 @@
             document.getElementById('win-end-wallet').innerText = totalCrystals;
             document.getElementById('game-win-screen').classList.remove('hidden');
             
-            createParticles(player.x, player.y, '#34c759', true, 40);
-            createParticles(player.x, player.y, '#ffd700', true, 40);
-            SFX.pickupSpecial(); SFX.pickupSpecial(); draw();
+            createParticles(player.x, player.y, '#34c759', true, 30);
+            SFX.pickupSpecial(); draw();
             saveGame();
         }
 
@@ -1108,7 +1076,7 @@
             else document.getElementById('game-over-screen').classList.remove('hidden');
         }
 
-        document.getElementById('pause-btn').addEventListener('click', () => {
+        document.getElementById('pause-btn').addEventListener('click', (e) => {
             if (isPlaying && !isPaused) {
                 isPaused = true;
                 document.getElementById('pause-screen').classList.remove('hidden');
