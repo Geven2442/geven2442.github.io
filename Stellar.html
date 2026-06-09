@@ -46,7 +46,6 @@
             background: radial-gradient(circle at center, #1f2833 0%, #0b0c10 100%);
         }
 
-        /* 效能優化：讓畫布透過 CSS 滿版拉伸，內部保持低解析度高畫質執行 */
         canvas { 
             display: block; 
             width: 100%; 
@@ -313,29 +312,14 @@
 
         let audioCtx;
         function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }
-
-        function playTone(freq, type, duration, vol = 0.1, slideFreq = null) {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            if (slideFreq) {
-                osc.frequency.exponentialRampToValueAtTime(slideFreq, audioCtx.currentTime + duration);
-            }
-            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) return;
+                if (!audioCtx) audioCtx = new AudioContextClass();
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume().catch(() => {});
+                }
+            } catch (e) {}
         }
 
         const SFX = {
@@ -349,7 +333,6 @@
             buy: () => { playTone(1000, 'sine', 0.1, 0.1); setTimeout(() => playTone(1500, 'sine', 0.2, 0.1), 100); }
         };
 
-        // 核心優化：關閉 Canvas 透明混合通道，直接啟用高效硬體加速
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
         const container = document.getElementById('game-container');
@@ -414,9 +397,7 @@
 
             let savedUpgrades = JSON.parse(localStorage.getItem('stellar_upgrades'));
             if (savedUpgrades) playerUpgrades = { ...playerUpgrades, ...savedUpgrades };
-        } catch (e) {
-            console.warn("無法存取 LocalStorage 存檔。");
-        }
+        } catch (e) {}
 
         function getMaxEnergy() { return 100 + (playerUpgrades.energyLvl - 1) * 25; }
         function getEngineDrain() { return 2 * Math.pow(0.9, playerUpgrades.engineLvl - 1); }
@@ -425,7 +406,6 @@
         
         let energy = getMaxEnergy();
 
-        // 核心優化：將畫布解析度永久鎖定在極輕量網格，完全消滅手機 GPU 填滿率負載
         function resizeCanvas() {
             canvas.width = 480;
             canvas.height = 800;
@@ -468,9 +448,7 @@
             draw() {
                 ctx.fillStyle = this.color;
                 const sz = this.radius * (isMobileDevice ? this.life : 1);
-                if (!isMobileDevice) ctx.globalAlpha = Math.max(0, this.life);
                 ctx.fillRect(this.x - sz, this.y - sz, sz * 2, sz * 2);
-                if (!isMobileDevice) ctx.globalAlpha = 1.0;
             }
         }
 
@@ -605,7 +583,6 @@
             draw() {
                 ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
                 ctx.fillStyle = '#5c6066'; 
-                
                 if (isMobileDevice) {
                     ctx.fillRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2);
                 } else {
@@ -688,25 +665,23 @@
                 ctx.strokeStyle = color; ctx.lineWidth = 2; 
                 ctx.fill(); ctx.stroke();
 
-                // 終極核心修正：用純幾何圖案代替 Canvas 內的 FontAwesome 文字渲染，安卓效能直接解封
                 ctx.fillStyle = color;
-                ctx.lineWidth = 2;
                 if (this.type === 'shield') {
-                    ctx.fillRect(-6, -2, 12, 4); ctx.fillRect(-2, -6, 4, 12); // 十字符號
+                    ctx.fillRect(-6, -2, 12, 4); ctx.fillRect(-2, -6, 4, 12); 
                 } else if (this.type === 'magnet') {
-                    ctx.strokeRect(-5, -5, 10, 10); // 雙重線方塊
+                    ctx.strokeRect(-5, -5, 10, 10); 
                 } else if (this.type === 'laser') {
-                    ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill(); // 核心圓點
+                    ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill(); 
                 } else {
-                    ctx.fillRect(-4, -4, 8, 8); // 實心核心
+                    ctx.fillRect(-4, -4, 8, 8); 
                 }
                 ctx.restore();
             }
         }
 
         let player = new Player();
-        let maxStars = isMobileDevice ? 25 : 75; 
-        let backgroundStars = Array.from({length: maxStars}, () => new Star());
+        let shortcutsCount = isMobileDevice ? 25 : 75; 
+        let backgroundStars = Array.from({length: shortcutsCount}, () => new Star());
         let asteroids = [];
         let crystals = [];
         let powerups = [];
@@ -717,7 +692,6 @@
         window.addEventListener('keydown', e => { keys[e.code] = true; });
         window.addEventListener('keyup', e => { keys[e.code] = false; });
 
-        // 核心優化：引入幾何畫面拉伸比例尺，精準換算滑鼠座標
         canvas.addEventListener('mousemove', (e) => {
             if (!isPlaying || isPaused) return;
             const rect = canvas.getBoundingClientRect();
@@ -725,18 +699,15 @@
             player.targetY = (e.clientY - rect.top) * (canvas.height / rect.height);
         });
 
-        // 終極核心修正：觸控直接綁定全域視窗，並套用比例尺，徹底擺脫任何隱形 HTML 外框的點擊攔截
         window.addEventListener('touchstart', handleTouch, { passive: false });
         window.addEventListener('touchmove', handleTouch, { passive: false });
 
         function handleTouch(e) {
             if (!isPlaying || isPaused) return;
-            
             if (e.target.tagName !== 'BUTTON' && !e.target.closest('.stat-box') && !e.target.closest('#pause-btn')) {
                 e.preventDefault();
                 const rect = canvas.getBoundingClientRect();
                 const touch = e.touches[0];
-                // 依據比例尺完美映射到 480x800 畫布上
                 player.targetX = (touch.clientX - rect.left) * (canvas.width / rect.width);
                 player.targetY = (touch.clientY - rect.top) * (canvas.height / rect.height);
             }
@@ -745,13 +716,6 @@
         function createParticles(x, y, color, isExplosion, count) {
             let finalCount = isMobileDevice ? Math.floor(count * 0.35) : count;
             for (let i = 0; i < finalCount; i++) particles.push(new Particle(x, y, color, isExplosion));
-        }
-
-        function triggerScreenShake(frames) {
-            if (isMobileDevice) return; 
-            screenShakeFrames = frames;
-            container.classList.add('screen-shake');
-            setTimeout(() => container.classList.remove('screen-shake'), 400);
         }
 
         function updateUI() {
@@ -943,16 +907,13 @@
         }
 
         function draw() {
-            // 核心優化：切斷硬體陰影模糊解算，拔除超重負載
             ctx.shadowBlur = 0;
             ctx.shadowColor = "transparent";
 
-            // 因為 alpha: false，必須手動刷滿底色清除上一幀殘影
             ctx.fillStyle = "#0b0c10";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.save();
 
-            // 星空 Batch Rendering 優化：統一樣式，不重複變更 ctx 樣式管線
             ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
             backgroundStars.forEach(star => star.draw());
 
@@ -969,9 +930,26 @@
             ctx.restore();
         }
 
-        function gameLoop() {
-            update(); draw();
+        // --- 核心優化：鎖定 60 FPS 的計時器變數 ---
+        let lastTime = performance.now();
+        const fpsInterval = 1000 / 60; // 鎖定每幀間隔 16.67ms
+
+        function gameLoop(currentTime) {
             gameLoopId = requestAnimationFrame(gameLoop);
+            
+            // 如果是直接呼叫，動態補充高精度時間戳記
+            if (!currentTime) currentTime = performance.now();
+            
+            const elapsed = currentTime - lastTime;
+            
+            // 唯有當實質經過的時間大於 16.67ms，才觸發更新與重繪
+            if (elapsed >= fpsInterval) {
+                // 扣除細微的時間溢出誤差，確保全硬體平台的更新速度絕對一致
+                lastTime = currentTime - (elapsed % fpsInterval);
+                
+                update(); 
+                draw();
+            }
         }
 
         function initGame() {
