@@ -10,7 +10,7 @@
     <style>
         :root {
             --bg-color: #0b0c10;
-            --primary-color: #b388ff; /* 改為霓虹紫主色調 */
+            --primary-color: #b388ff; 
             --secondary-color: #7c4dff;
             --text-color: #c5c6c7;
             --danger-color: #ff3b30;
@@ -97,6 +97,14 @@
 
         @keyframes pulseBuff { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
 
+        /* 模式與關卡提示 */
+        #mode-display {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            font-size: 1.5rem; font-weight: 900; color: var(--primary-color);
+            text-shadow: 0 0 15px var(--primary-color); letter-spacing: 2px;
+            background: rgba(11, 12, 16, 0.6); padding: 5px 20px; border-radius: 20px; border: 1px solid var(--secondary-color);
+        }
+
         .overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(11, 12, 16, 0.85); backdrop-filter: blur(5px);
@@ -117,16 +125,22 @@
             100% { text-shadow: 0 0 25px var(--primary-color), 0 0 50px var(--secondary-color); transform: scale(1.05); }
         }
 
+        .btn-group {
+            display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px;
+        }
+
         .btn {
             background: transparent; color: var(--primary-color); border: 2px solid var(--primary-color);
-            padding: 12px 30px; font-size: 1.2rem; font-family: 'Orbitron', sans-serif;
+            padding: 12px 25px; font-size: 1.1rem; font-family: 'Orbitron', sans-serif;
             font-weight: 700; border-radius: 50px; cursor: pointer; text-transform: uppercase;
-            letter-spacing: 2px; transition: all 0.3s ease; margin: 10px;
+            letter-spacing: 2px; transition: all 0.3s ease;
             box-shadow: 0 0 15px rgba(179, 136, 255, 0.3);
         }
         .btn:hover { background: var(--primary-color); color: var(--bg-color); box-shadow: 0 0 30px rgba(179, 136, 255, 0.6); transform: translateY(-3px); }
         .btn.gold { color: var(--crystal-color); border-color: var(--crystal-color); box-shadow: 0 0 15px rgba(255, 215, 0, 0.3); }
         .btn.gold:hover { background: var(--crystal-color); color: var(--bg-color); box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); }
+        .btn.outline { color: var(--text-color); border-color: var(--text-color); box-shadow: 0 0 15px rgba(255, 255, 255, 0.1); }
+        .btn.outline:hover { background: var(--text-color); color: var(--bg-color); box-shadow: 0 0 30px rgba(255, 255, 255, 0.3); }
 
         .shop-panel {
             background: #1f2833; border: 2px solid var(--secondary-color);
@@ -154,26 +168,33 @@
         <div id="joystick-zone"></div>
 
         <div id="ui-layer">
+            <div id="mode-display">無盡模式</div>
             <div class="hud">
                 <div class="hud-left">
                     <div class="stat-box">
                         <i class="fa-solid fa-gem" style="color: var(--crystal-color);"></i>
-                        <span id="score">0</span>
+                        <span id="score">0</span><span id="target-score" style="color: #aaa; font-size: 0.8rem; margin-left: 5px; display: none;">/ 500</span>
                     </div>
                     <div class="stat-box" style="font-size:0.9rem; padding: 5px 15px;">
                         <i class="fa-solid fa-wallet" style="color: #fff;"></i>
                         <span id="hud-wallet">0</span>
                     </div>
                 </div>
-                <div class="hud-right">
-                    <div class="stat-box">
-                        <i class="fa-solid fa-bolt" style="color: var(--danger-color);"></i>
-                        <div class="energy-bar-bg">
-                            <div class="energy-bar-fill" id="energy-fill"></div>
-                            <div class="energy-text"><span id="energy-text-val">100</span> / <span id="energy-text-max">100</span></div>
+                <div class="hud-right" style="align-items: flex-end;">
+                    <div style="display: flex; gap: 10px;">
+                        <div class="stat-box">
+                            <i class="fa-solid fa-bolt" style="color: var(--danger-color);"></i>
+                            <div class="energy-bar-bg">
+                                <div class="energy-bar-fill" id="energy-fill"></div>
+                                <div class="energy-text"><span id="energy-text-val">100</span> / <span id="energy-text-max">100</span></div>
+                            </div>
+                        </div>
+                        <!-- 暫停選單按鈕 -->
+                        <div class="stat-box" id="pause-btn" style="cursor: pointer; padding: 10px 15px; pointer-events: auto;">
+                            <i class="fa-solid fa-pause"></i>
                         </div>
                     </div>
-                    <div class="buffs-container">
+                    <div class="buffs-container" style="margin-top: 10px;">
                         <div class="buff-icon buff-shield" id="icon-shield"><i class="fa-solid fa-shield-halved"></i></div>
                         <div class="buff-icon buff-magnet" id="icon-magnet"><i class="fa-solid fa-magnet"></i></div>
                         <div class="buff-icon buff-laser" id="icon-laser"><i class="fa-solid fa-burst"></i></div>
@@ -182,34 +203,59 @@
             </div>
         </div>
 
+        <!-- 主畫面 -->
         <div id="start-screen" class="overlay">
             <h1 class="title">Stellar<br>Scavenger</h1>
             <p style="margin-bottom: 20px;">總資產: <i class="fa-solid fa-gem" style="color: var(--crystal-color);"></i> <span id="start-wallet" style="color: var(--crystal-color); font-weight: bold;">0</span></p>
-            <button class="btn" id="start-btn">啟動引擎 <i class="fa-solid fa-rocket"></i></button>
-            <button class="btn gold" id="open-shop-btn">星際商店 <i class="fa-solid fa-store"></i></button>
+            <div class="btn-group">
+                <button class="btn" id="start-endless-btn">無盡模式 <i class="fa-solid fa-infinity"></i></button>
+                <button class="btn" id="start-level-btn">關卡模式 <i class="fa-solid fa-flag-checkered"></i></button>
+            </div>
+            <button class="btn gold" id="open-shop-btn" style="margin-top: 10px;">星際商店 <i class="fa-solid fa-store"></i></button>
         </div>
 
+        <!-- 遊戲暫停畫面 -->
+        <div id="pause-screen" class="overlay hidden">
+            <h1 class="title">系統暫停</h1>
+            <div class="btn-group" style="flex-direction: column; align-items: center; width: 250px;">
+                <button class="btn" id="resume-btn" style="width: 100%;">繼續遊戲 <i class="fa-solid fa-play"></i></button>
+                <button class="btn outline" id="restart-pause-btn" style="width: 100%;">重新部署 <i class="fa-solid fa-rotate-right"></i></button>
+                <button class="btn outline" id="home-pause-btn" style="width: 100%;">回主畫面 <i class="fa-solid fa-house"></i></button>
+            </div>
+        </div>
+
+        <!-- 遊戲結束畫面 -->
         <div id="game-over-screen" class="overlay hidden">
             <h1 class="title" style="color: var(--danger-color); text-shadow: 0 0 20px var(--danger-color);">船體破裂</h1>
             <p style="font-size: 1.5rem; margin-bottom: 5px;">本次得分: <span id="final-score" style="color: var(--crystal-color); font-weight: bold;">0</span></p>
-            <p style="font-size: 1.2rem; margin-bottom: 20px;">獲得水晶: <i class="fa-solid fa-gem" style="color: var(--crystal-color);"></i> <span id="final-earned" style="color: var(--crystal-color); font-weight: bold;">0</span></p>
+            <p id="high-score-display" style="font-size: 1.2rem; margin-bottom: 5px; display: none;">最高紀錄: <span id="high-score-val" style="color: var(--primary-color); font-weight: bold;">0</span></p>
+            
+            <p style="font-size: 1.1rem; margin-bottom: 20px;">獲得水晶: <i class="fa-solid fa-gem" style="color: var(--crystal-color);"></i> <span id="final-earned" style="color: var(--crystal-color); font-weight: bold;">0</span></p>
             <p style="margin-bottom: 30px; font-size: 1.1rem; border-top: 1px solid #333; padding-top: 10px;">總資產結餘: <i class="fa-solid fa-gem" style="color: var(--crystal-color);"></i> <span id="end-wallet" style="color: var(--crystal-color); font-weight: bold;">0</span></p>
             
-            <button class="btn" id="restart-btn" style="border-color: var(--danger-color); color: var(--danger-color);">重新部署 <i class="fa-solid fa-rotate-right"></i></button>
-            <button class="btn gold" id="open-shop-btn-end">開啟商店 <i class="fa-solid fa-store"></i></button>
+            <div class="btn-group">
+                <button class="btn" id="restart-btn" style="border-color: var(--danger-color); color: var(--danger-color);">再次挑戰 <i class="fa-solid fa-rotate-right"></i></button>
+                <button class="btn gold" id="open-shop-btn-end">商店 <i class="fa-solid fa-store"></i></button>
+                <button class="btn outline" id="home-btn-lose">主畫面 <i class="fa-solid fa-house"></i></button>
+            </div>
         </div>
         
+        <!-- 過關畫面 -->
         <div id="game-win-screen" class="overlay hidden">
-            <h1 class="title" style="color: #34c759; text-shadow: 0 0 20px #34c759;">躍遷成功</h1>
-            <p style="font-size: 1.2rem; margin-bottom: 10px; text-align: center;">你收集了足夠的能量，成功逃離！</p>
+            <h1 class="title" id="win-title" style="color: #34c759; text-shadow: 0 0 20px #34c759;">躍遷成功</h1>
+            <p style="font-size: 1.2rem; margin-bottom: 10px; text-align: center;">能量已滿，順利突破當前空域！</p>
             <p style="font-size: 1.5rem; margin-bottom: 5px;">本次得分: <span id="win-score" style="color: var(--crystal-color); font-weight: bold;">0</span></p>
             <p style="font-size: 1.2rem; margin-bottom: 20px;">獲得水晶: <i class="fa-solid fa-gem" style="color: var(--crystal-color);"></i> <span id="win-earned" style="color: var(--crystal-color); font-weight: bold;">0</span></p>
             <p style="margin-bottom: 30px; font-size: 1.1rem; border-top: 1px solid #333; padding-top: 10px;">總資產結餘: <i class="fa-solid fa-gem" style="color: var(--crystal-color);"></i> <span id="win-end-wallet" style="color: var(--crystal-color); font-weight: bold;">0</span></p>
             
-            <button class="btn" id="win-restart-btn" style="border-color: #34c759; color: #34c759;">再次挑戰 <i class="fa-solid fa-space-awesome"></i></button>
-            <button class="btn gold" id="open-shop-btn-win">逛逛商店 <i class="fa-solid fa-store"></i></button>
+            <div class="btn-group">
+                <button class="btn" id="next-level-btn" style="border-color: #34c759; color: #34c759;">前往下一關 <i class="fa-solid fa-forward-step"></i></button>
+                <button class="btn gold" id="open-shop-btn-win">商店 <i class="fa-solid fa-store"></i></button>
+                <button class="btn outline" id="home-btn-win">主畫面 <i class="fa-solid fa-house"></i></button>
+            </div>
         </div>
 
+        <!-- 商店介面 -->
         <div id="shop-screen" class="overlay hidden">
             <div class="shop-panel">
                 <div class="shop-header">
@@ -247,13 +293,14 @@
                 <div class="shop-item">
                     <div class="shop-item-info">
                         <h3 style="color: #ff3b30;">赤紅塗裝 <span id="status-color-red" style="color:#fff;"></span></h3>
-                        <p>解鎖專屬紅色烈焰飛船外觀</p>
+                        <!-- 裝備說明更新：顯示數值加強效果 -->
+                        <p>專屬烈焰外觀，<span style="color: #ff8a80;">碰撞傷害減輕10點，水晶收益+20%</span></p>
                     </div>
                     <button class="shop-buy-btn" id="buy-color-red">500 <i class="fa-solid fa-gem"></i></button>
                 </div>
                 
                 <div style="text-align: center; margin-top: 20px;">
-                    <button class="btn" id="close-shop-btn">離開商店 <i class="fa-solid fa-door-open"></i></button>
+                    <button class="btn outline" id="close-shop-btn">離開商店 <i class="fa-solid fa-door-open"></i></button>
                 </div>
             </div>
         </div>
@@ -304,13 +351,19 @@
         
         let gameLoopId;
         let isPlaying = false;
+        let isPaused = false;
         let score = 0;
         let frameCount = 0;
         let difficultyMultiplier = 1;
         let screenShakeFrames = 0;
         
+        // 模式相關變數
+        let currentMode = 'endless';
+        let currentLevel = 1;
+        let endlessHighScore = 0;
+
         let totalCrystals = 0;
-        let crystalsEarnedThisRound = 0; // 新增：精準紀錄單局賺的錢
+        let crystalsEarnedThisRound = 0;
         let playerUpgrades = {
             energyLvl: 1, engineLvl: 1, magnetLvl: 1, hasRedSkin: false, equippedSkin: 'default'
         };
@@ -319,21 +372,26 @@
             let savedWallet = localStorage.getItem('stellar_wallet');
             if (savedWallet) totalCrystals = parseInt(savedWallet) || 0;
             
+            let savedHS = localStorage.getItem('stellar_highscore');
+            if (savedHS) endlessHighScore = parseInt(savedHS) || 0;
+
             let savedUpgrades = JSON.parse(localStorage.getItem('stellar_upgrades'));
             if (savedUpgrades) playerUpgrades = { ...playerUpgrades, ...savedUpgrades };
         } catch (e) {
-            console.warn("無法存取 LocalStorage 存檔，遊戲將以預設進度啟動。");
+            console.warn("無法存取 LocalStorage 存檔。");
         }
 
         function getMaxEnergy() { return 100 + (playerUpgrades.energyLvl - 1) * 25; }
         function getEngineDrain() { return 2 * Math.pow(0.9, playerUpgrades.engineLvl - 1); }
         function getMagnetSpeed() { return 12 + (playerUpgrades.magnetLvl - 1) * 3; } 
+        function getLevelTarget() { return currentLevel * 500; } 
         
         let energy = getMaxEnergy();
 
         function saveGame() {
             try {
                 localStorage.setItem('stellar_wallet', totalCrystals.toString());
+                localStorage.setItem('stellar_highscore', endlessHighScore.toString());
                 localStorage.setItem('stellar_upgrades', JSON.stringify(playerUpgrades));
             } catch (e) {}
             updateWalletUI();
@@ -356,7 +414,7 @@
         class Star {
             constructor() { this.reset(); this.y = random(0, canvas.height); }
             reset() { this.x = random(0, canvas.width); this.y = -10; this.size = random(0.5, 2.5); this.speed = this.size * random(1, 3); this.color = `rgba(255, 255, 255, ${random(0.3, 0.8)})`; }
-            update() { this.y += this.speed * (isPlaying ? (1 + score/100) : 1); if (this.y > canvas.height) this.reset(); }
+            update() { this.y += this.speed * (isPlaying && !isPaused ? (1 + score/100) : 1); if (this.y > canvas.height) this.reset(); }
             draw() { ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); }
         }
 
@@ -418,8 +476,7 @@
                 this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
                 this.thrustFrames++;
 
-                if (isPlaying && this.thrustFrames % 2 === 0) {
-                    // 根據裝備更新拖尾顏色，預設為霓虹紫
+                if (isPlaying && !isPaused && this.thrustFrames % 2 === 0) {
                     const trailColor = playerUpgrades.equippedSkin === 'red' ? '#ff3b30' : '#b388ff';
                     particles.push(new Particle(this.x + random(-5, 5), this.y + 10, trailColor, false, true));
                 }
@@ -467,7 +524,6 @@
                     flameColor = 'rgba(255, 50, 0, 0.9)'; 
                     flameShadow = '#ff0000';
                 } else {
-                    // 全新霓虹紫預設塗裝
                     gradient.addColorStop(0.3, '#b388ff'); gradient.addColorStop(1, '#7c4dff');
                     ctx.shadowColor = '#b388ff';
                     ctx.shadowBlur = 15;
@@ -625,7 +681,7 @@
         window.addEventListener('keyup', e => { keys[e.code] = false; });
 
         canvas.addEventListener('mousemove', (e) => {
-            if (!isPlaying) return;
+            if (!isPlaying || isPaused) return;
             const rect = canvas.getBoundingClientRect();
             player.targetX = e.clientX - rect.left; player.targetY = e.clientY - rect.top;
         });
@@ -634,12 +690,12 @@
         let touchStartX, touchStartY, playerStartTargetX, playerStartTargetY;
         window.addEventListener('touchstart', function detectTouch() { joystickZone.style.display = 'block'; window.removeEventListener('touchstart', detectTouch); }, { once: true });
         joystickZone.addEventListener('touchstart', (e) => {
-            if (!isPlaying) return; e.preventDefault();
+            if (!isPlaying || isPaused) return; e.preventDefault();
             const touch = e.touches[0]; touchStartX = touch.clientX; touchStartY = touch.clientY;
             playerStartTargetX = player.targetX; playerStartTargetY = player.targetY;
         }, { passive: false });
         joystickZone.addEventListener('touchmove', (e) => {
-            if (!isPlaying) return; e.preventDefault();
+            if (!isPlaying || isPaused) return; e.preventDefault();
             const touch = e.touches[0];
             player.targetX = playerStartTargetX + (touch.clientX - touchStartX) * 1.5;
             player.targetY = playerStartTargetY + (touch.clientY - touchStartY) * 1.5;
@@ -657,6 +713,16 @@
 
         function updateUI() {
             document.getElementById('score').innerText = score;
+            
+            document.getElementById('mode-display').innerText = currentMode === 'endless' ? '無盡模式' : `第 ${currentLevel} 關`;
+            const targetScoreUI = document.getElementById('target-score');
+            if(currentMode === 'level') {
+                targetScoreUI.style.display = 'inline';
+                targetScoreUI.innerText = `/ ${getLevelTarget()}`;
+            } else {
+                targetScoreUI.style.display = 'none';
+            }
+
             const energyFill = document.getElementById('energy-fill');
             const max = getMaxEnergy();
             const percentage = Math.max(0, (energy / max) * 100);
@@ -667,8 +733,8 @@
             if (percentage < 25) {
                 energyFill.style.background = 'var(--danger-color)';
                 energyFill.style.boxShadow = '0 0 10px var(--danger-color)';
-                if (frameCount % 30 === 0) SFX.alarm(); 
-                if (frameCount % 60 === 0) triggerScreenShake(5); 
+                if (!isPaused && frameCount % 30 === 0) SFX.alarm(); 
+                if (!isPaused && frameCount % 60 === 0) triggerScreenShake(5); 
             } else {
                 energyFill.style.background = 'linear-gradient(90deg, #ff3b30, #ffcc00, #34c759)';
                 energyFill.style.boxShadow = 'none';
@@ -694,9 +760,14 @@
         }
 
         function update() {
-            if (!isPlaying) return;
+            if (!isPlaying || isPaused) return;
             frameCount++;
-            difficultyMultiplier = 1 + score / 1000;
+            
+            if (currentMode === 'level') {
+                difficultyMultiplier = 1 + (currentLevel * 0.2) + (score / 1000);
+            } else {
+                difficultyMultiplier = 1 + (score / 800); 
+            }
 
             if (keys['ArrowLeft'] || keys['KeyA']) player.targetX -= 7;
             if (keys['ArrowRight'] || keys['KeyD']) player.targetX += 7;
@@ -724,13 +795,16 @@
                         createParticles(p.x, p.y, '#ff1744', true, 5);
                         SFX.hit();
                         
-                        // FIX: 擊碎隕石確保錢包也有收入！
-                        score += 5; 
-                        totalCrystals += 5; 
-                        crystalsEarnedThisRound += 5;
+                        // 塗裝增益：擊碎小行星分數/金錢提升
+                        let shootEarn = playerUpgrades.equippedSkin === 'red' ? 6 : 5;
+                        score += shootEarn; 
+                        totalCrystals += shootEarn; 
+                        crystalsEarnedThisRound += shootEarn;
 
                         a.markedForDeletion = true;
                         p.markedForDeletion = true;
+                        
+                        checkLevelWin();
                         break;
                     }
                 }
@@ -751,7 +825,11 @@
                     } else {
                         createParticles(player.x, player.y, '#b388ff', true, 20);
                         createParticles(ast.x, ast.y, '#5c6066', true, 20);
-                        energy -= 30;
+                        
+                        // 塗裝增益：減輕碰撞傷害 (30 -> 20)
+                        let dmg = playerUpgrades.equippedSkin === 'red' ? 20 : 30;
+                        energy -= dmg;
+                        
                         SFX.explosion();
                         triggerScreenShake(15);
                         if (energy <= 0) { gameOver(); return; }
@@ -768,8 +846,10 @@
                     let isSpecial = cry.type === 'special';
                     createParticles(cry.x, cry.y, isSpecial ? '#ff3b30' : '#ffd700', false, 15);
                     
-                    let earned = isSpecial ? 50 : 10;
-                    // FIX: 同步更新分數與金錢
+                    let baseEarn = isSpecial ? 50 : 10;
+                    // 塗裝增益：水晶分數/金錢提升 20%
+                    let earned = playerUpgrades.equippedSkin === 'red' ? Math.floor(baseEarn * 1.2) : baseEarn;
+                    
                     score += earned;
                     totalCrystals += earned; 
                     crystalsEarnedThisRound += earned;
@@ -780,7 +860,7 @@
                     updateUI();
                     cry.markedForDeletion = true;
 
-                    if (score >= 500) { gameWin(); return; }
+                    checkLevelWin();
                 }
                 if (cry.markedForDeletion) crystals.splice(i, 1);
             }
@@ -795,14 +875,16 @@
                         asteroids.forEach(a => {
                             createParticles(a.x, a.y, '#5c6066', true, 15);
                             a.markedForDeletion = true;
-                            // FIX: 炸彈炸毀的也要算錢！
-                            score += 5; 
-                            totalCrystals += 5;
-                            crystalsEarnedThisRound += 5;
+                            // 塗裝增益：炸彈炸毀隕石分數提升
+                            let bombEarn = playerUpgrades.equippedSkin === 'red' ? 6 : 5;
+                            score += bombEarn; 
+                            totalCrystals += bombEarn;
+                            crystalsEarnedThisRound += bombEarn;
                         });
                         SFX.explosion();
                         triggerScreenShake(25);
                         updateUI();
+                        checkLevelWin();
                     } else {
                         if(pu.type === 'shield') player.buffs.shield = 600;
                         if(pu.type === 'magnet') player.buffs.magnet = 600;
@@ -818,6 +900,12 @@
             for (let i = particles.length - 1; i >= 0; i--) {
                 particles[i].update();
                 if (particles[i].markedForDeletion) particles.splice(i, 1);
+            }
+        }
+
+        function checkLevelWin() {
+            if (currentMode === 'level' && score >= getLevelTarget() && isPlaying && !isPaused) {
+                gameWin();
             }
         }
 
@@ -853,14 +941,18 @@
         }
 
         function initGame() {
-            // FIX: 重置單局獲得水晶數
             score = 0; crystalsEarnedThisRound = 0; 
             energy = getMaxEnergy(); frameCount = 0; difficultyMultiplier = 1; screenShakeFrames = 0;
+            isPaused = false;
             player.reset(); updateBuffUI(); updateUI();
             asteroids = []; crystals = []; powerups = []; particles = []; projectiles = [];
         }
 
-        function startGame() {
+        function startGame(mode, keepLevel = false) {
+            currentMode = mode;
+            if (mode === 'level' && !keepLevel) {
+                currentLevel = 1; 
+            }
             initAudio(); initGame();
             document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
             isPlaying = true;
@@ -869,8 +961,19 @@
         function gameOver() {
             isPlaying = false;
             document.getElementById('final-score').innerText = score;
-            document.getElementById('final-earned').innerText = crystalsEarnedThisRound; // 更新明細
+            document.getElementById('final-earned').innerText = crystalsEarnedThisRound;
             document.getElementById('end-wallet').innerText = totalCrystals;
+            
+            if (currentMode === 'endless') {
+                if (score > endlessHighScore) {
+                    endlessHighScore = score;
+                }
+                document.getElementById('high-score-display').style.display = 'block';
+                document.getElementById('high-score-val').innerText = endlessHighScore;
+            } else {
+                document.getElementById('high-score-display').style.display = 'none';
+            }
+
             document.getElementById('game-over-screen').classList.remove('hidden');
             
             const expColor = playerUpgrades.equippedSkin === 'red' ? '#ff3b30' : '#b388ff';
@@ -882,8 +985,9 @@
 
         function gameWin() {
             isPlaying = false;
+            document.getElementById('win-title').innerText = `第 ${currentLevel} 關 躍遷成功`;
             document.getElementById('win-score').innerText = score;
-            document.getElementById('win-earned').innerText = crystalsEarnedThisRound; // 更新明細
+            document.getElementById('win-earned').innerText = crystalsEarnedThisRound; 
             document.getElementById('win-end-wallet').innerText = totalCrystals;
             document.getElementById('game-win-screen').classList.remove('hidden');
             
@@ -891,6 +995,12 @@
             createParticles(player.x, player.y, '#ffd700', true, 80);
             SFX.pickupSpecial(); SFX.pickupSpecial(); draw();
             saveGame();
+        }
+
+        function goHome() {
+            document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+            document.getElementById('start-screen').classList.remove('hidden');
+            updateWalletUI(); 
         }
 
         function updateWalletUI() {
@@ -939,10 +1049,32 @@
         function closeShop() {
             document.getElementById('shop-screen').classList.add('hidden');
             if (score === 0 && energy === getMaxEnergy()) document.getElementById('start-screen').classList.remove('hidden');
-            else if (score >= 500) document.getElementById('game-win-screen').classList.remove('hidden');
+            else if (currentMode === 'level' && score >= getLevelTarget()) document.getElementById('game-win-screen').classList.remove('hidden');
             else document.getElementById('game-over-screen').classList.remove('hidden');
         }
 
+        // 暫停選單綁定
+        document.getElementById('pause-btn').addEventListener('click', () => {
+            if (isPlaying && !isPaused) {
+                isPaused = true;
+                document.getElementById('pause-screen').classList.remove('hidden');
+            }
+        });
+        document.getElementById('resume-btn').addEventListener('click', () => {
+            isPaused = false;
+            document.getElementById('pause-screen').classList.add('hidden');
+        });
+        document.getElementById('restart-pause-btn').addEventListener('click', () => {
+            isPaused = false;
+            startGame(currentMode, false);
+        });
+        document.getElementById('home-pause-btn').addEventListener('click', () => {
+            isPaused = false;
+            isPlaying = false;
+            goHome();
+        });
+
+        // 商店購買綁定
         document.getElementById('buy-energy').addEventListener('click', () => {
             const cost = 100 * playerUpgrades.energyLvl;
             if(totalCrystals >= cost && playerUpgrades.energyLvl < 5) {
@@ -969,9 +1101,20 @@
             }
         });
 
-        document.getElementById('start-btn').addEventListener('click', startGame);
-        document.getElementById('restart-btn').addEventListener('click', startGame);
-        document.getElementById('win-restart-btn').addEventListener('click', startGame);
+        // 遊戲流程控制綁定
+        document.getElementById('start-endless-btn').addEventListener('click', () => startGame('endless'));
+        document.getElementById('start-level-btn').addEventListener('click', () => startGame('level'));
+        document.getElementById('restart-btn').addEventListener('click', () => startGame(currentMode, false));
+        document.getElementById('next-level-btn').addEventListener('click', () => {
+            currentLevel++; 
+            startGame('level', true); 
+        });
+        
+        // 主畫面綁定
+        document.getElementById('home-btn-lose').addEventListener('click', goHome);
+        document.getElementById('home-btn-win').addEventListener('click', goHome);
+
+        // 商店開關綁定
         document.getElementById('open-shop-btn').addEventListener('click', openShop);
         document.getElementById('open-shop-btn-end').addEventListener('click', openShop);
         document.getElementById('open-shop-btn-win').addEventListener('click', openShop);
