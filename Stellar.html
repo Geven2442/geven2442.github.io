@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>星際拾荒者 - 終極升級版</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2 family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
@@ -48,7 +48,6 @@
 
         canvas { display: block; width: 100%; height: 100%; }
 
-        /* 修正手機版重疊：將 UI 層改為向下排列並縮小間距 */
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; display: flex; flex-direction: column;
@@ -56,7 +55,6 @@
             gap: 10px;
         }
 
-        /* 修正手機版重疊：獨立的中央頂部模式顯示列 */
         .hud-header {
             width: 100%;
             display: flex;
@@ -68,7 +66,7 @@
             text-shadow: 0 0 10px var(--primary-color); letter-spacing: 2px;
             background: rgba(11, 12, 16, 0.7); padding: 5px 20px; border-radius: 20px; 
             border: 1px solid var(--secondary-color);
-            pointer-events: auto;
+            pointer-events: auto; /* 允許點擊暫停或切換 */
         }
 
         .hud {
@@ -162,7 +160,6 @@
         .shop-item-info h3 { color: var(--primary-color); font-size: 1.1rem; margin-bottom: 5px; }
         .shop-item-info p { font-size: 0.8rem; color: #aaa; }
         
-        /* 手機 RWD 排版微調斷點 */
         @media (max-width: 480px) {
             #ui-layer { padding: 8px; gap: 5px; }
             #mode-display { font-size: 0.95rem; padding: 4px 15px; }
@@ -179,11 +176,10 @@
 <body>
 
     <div id="game-container">
+        <!-- 移除舊的搖桿 HTML，完全釋放觸控阻擋 -->
         <canvas id="gameCanvas"></canvas>
-        <div id="joystick-zone"></div>
 
         <div id="ui-layer">
-            <!-- 修正重疊：獨立一行中央置頂標籤 -->
             <div class="hud-header">
                 <div id="mode-display">無盡模式</div>
             </div>
@@ -314,7 +310,7 @@
     </div>
 
     <script>
-        // --- 核心優化：手機裝置性能硬體偵測 ---
+        // 核心硬體效能偵測
         const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         let audioCtx;
@@ -430,6 +426,15 @@
         
         let energy = getMaxEnergy();
 
+        function saveGame() {
+            try {
+                localStorage.setItem('stellar_wallet', totalCrystals.toString());
+                localStorage.setItem('stellar_highscore', endlessHighScore.toString());
+                localStorage.setItem('stellar_upgrades', JSON.stringify(playerUpgrades));
+            } catch (e) {}
+            updateWalletUI();
+        }
+
         function resizeCanvas() {
             canvas.width = container.clientWidth;
             canvas.height = container.clientHeight;
@@ -446,21 +451,25 @@
 
         class Star {
             constructor() { this.reset(); this.y = random(0, canvas.height); }
-            reset() { this.x = random(0, canvas.width); this.y = -10; this.size = random(0.5, 2.5); this.speed = this.size * random(1, 3); this.color = `rgba(255, 255, 255, ${random(0.3, 0.8)})`; }
+            reset() { this.x = random(0, canvas.width); this.y = -10; this.size = random(1, 2.5); this.speed = this.size * random(1, 2.5); this.color = `rgba(255, 255, 255, ${random(0.3, 0.7)})`; }
             update() { this.y += this.speed * (isPlaying && !isPaused ? (1 + score/100) : 1); if (this.y > canvas.height) this.reset(); }
-            draw() { ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); }
+            draw() { 
+                ctx.fillStyle = this.color; 
+                // 效能關鍵優化：用 fillRect (矩形) 代替 arc (圓形)，效能飆升
+                ctx.fillRect(this.x, this.y, this.size, this.size); 
+            }
         }
 
         class Particle {
             constructor(x, y, color, isExplosion, isTrail = false) {
                 this.x = x; this.y = y; this.color = color;
-                this.radius = isTrail ? random(1, 2.5) : random(2, 4);
+                this.radius = isTrail ? random(1, 2) : random(2, 3.5);
                 const angle = random(0, Math.PI * 2);
-                const speed = isExplosion ? random(2, 7) : random(0.5, 1.5);
+                const speed = isExplosion ? random(2, 6) : random(0.5, 1.2);
                 this.vx = Math.cos(angle) * speed;
-                this.vy = isTrail ? random(1, 2.5) : Math.sin(angle) * speed;
+                this.vy = isTrail ? random(1, 2) : Math.sin(angle) * speed;
                 this.life = 1.0;
-                this.decay = isTrail ? random(0.06, 0.12) : random(0.02, 0.06);
+                this.decay = isTrail ? random(0.06, 0.12) : random(0.03, 0.07);
                 this.markedForDeletion = false;
             }
             update() {
@@ -469,8 +478,14 @@
             }
             draw() {
                 ctx.globalAlpha = Math.max(0, this.life);
-                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = this.color; ctx.fill(); ctx.globalAlpha = 1.0;
+                ctx.fillStyle = this.color;
+                // 手機端拖尾粒子同樣改用矩形繪製
+                if (isMobileDevice) {
+                    ctx.fillRect(this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
+                } else {
+                    ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                }
+                ctx.globalAlpha = 1.0;
             }
         }
 
@@ -486,10 +501,8 @@
             draw() {
                 ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
                 ctx.fillStyle = '#ff1744';
-                // 效能優化：手機端不執行陰影渲染
                 if (!isMobileDevice) { ctx.shadowColor = '#ff1744'; ctx.shadowBlur = 10; }
                 ctx.fill(); 
-                if (!isMobileDevice) { ctx.shadowBlur = 0; }
             }
         }
 
@@ -497,7 +510,7 @@
             constructor() {
                 this.radius = 14;
                 this.reset();
-                this.speed = 0.15; 
+                this.speed = 0.2; // 提高跟隨靈敏度
             }
             reset() {
                 this.x = canvas.width / 2; this.y = canvas.height * 0.8;
@@ -512,7 +525,6 @@
                 this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
                 this.thrustFrames++;
 
-                // 效能優化：手機端降低拖尾粒子生成率
                 let trailRate = isMobileDevice ? 4 : 2;
                 if (isPlaying && !isPaused && this.thrustFrames % trailRate === 0) {
                     const trailColor = playerUpgrades.equippedSkin === 'red' ? '#ff3b30' : '#b388ff';
@@ -584,7 +596,7 @@
                     ctx.beginPath(); ctx.arc(0, 0, this.radius + 8, 0, Math.PI * 2);
                     ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 2.5; 
                     if (!isMobileDevice) { ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 12; }
-                    ctx.fillStyle = 'rgba(0, 229, 255, 0.15)'; ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = 'rgba(0, 229, 255, 0.12)'; ctx.fill(); ctx.stroke();
                 }
 
                 ctx.restore();
@@ -593,13 +605,13 @@
 
         class Asteroid {
             constructor() {
-                this.radius = random(14, 32);
+                this.radius = random(14, 30);
                 this.x = random(this.radius, canvas.width - this.radius);
                 this.y = -this.radius - 50;
-                this.speedY = random(2, 4.5) * difficultyMultiplier;
-                this.speedX = random(-0.8, 0.8) * difficultyMultiplier;
+                this.speedY = random(2, 4.2) * difficultyMultiplier;
+                this.speedX = random(-0.7, 0.7) * difficultyMultiplier;
                 this.rotation = random(0, Math.PI * 2);
-                this.rotationSpeed = random(-0.04, 0.04);
+                this.rotationSpeed = random(-0.03, 0.03);
                 this.vertices = Math.floor(random(5, 8));
                 this.offsets = Array.from({length: this.vertices}, () => random(0.75, 1.1));
                 this.markedForDeletion = false;
@@ -634,7 +646,7 @@
                 this.radius = 11;
                 this.x = random(this.radius, canvas.width - this.radius);
                 this.y = -this.radius;
-                this.speedY = random(2, 3.8) * difficultyMultiplier;
+                this.speedY = random(2, 3.5) * difficultyMultiplier;
                 this.type = Math.random() > 0.9 ? 'special' : 'normal'; 
                 this.markedForDeletion = false;
                 this.rotation = 0;
@@ -659,12 +671,10 @@
                 ctx.beginPath(); ctx.moveTo(0, -this.radius); ctx.lineTo(this.radius * 0.7, 0);
                 ctx.lineTo(0, this.radius); ctx.lineTo(-this.radius * 0.7, 0); ctx.closePath();
                 const color = this.type === 'special' ? '#ff3b30' : '#ffd700';
-                const glow = this.type === 'special' ? '#ff8a80' : '#fff9c4';
                 ctx.fillStyle = color; 
-                if (!isMobileDevice) { ctx.shadowColor = glow; ctx.shadowBlur = 12; }
                 ctx.fill();
                 ctx.beginPath(); ctx.moveTo(0, -this.radius * 0.5); ctx.lineTo(this.radius * 0.25, 0);
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'; ctx.lineWidth = 1.5; ctx.stroke();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)'; ctx.lineWidth = 1.5; ctx.stroke();
                 ctx.restore();
             }
         }
@@ -674,7 +684,7 @@
                 this.radius = 14;
                 this.x = random(this.radius, canvas.width - this.radius);
                 this.y = -this.radius;
-                this.speedY = random(1.5, 2.8);
+                this.speedY = random(1.5, 2.5);
                 const types = ['shield', 'magnet', 'laser', 'bomb'];
                 this.type = types[Math.floor(Math.random() * types.length)];
                 this.markedForDeletion = false;
@@ -696,22 +706,19 @@
                 else { color = '#ff9100'; icon = '\uf1e2'; } 
 
                 ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(${parseInt(color.slice(1,3),16)},${parseInt(color.slice(3,5),16)},${parseInt(color.slice(5,7),16)},0.25)`;
+                ctx.fillStyle = `rgba(${parseInt(color.slice(1,3),16)},${parseInt(color.slice(3,5),16)},${parseInt(color.slice(5,7),16)},0.2)`;
                 ctx.strokeStyle = color; ctx.lineWidth = 2; 
-                if (!isMobileDevice) { ctx.shadowColor = color; ctx.shadowBlur = 12; }
                 ctx.fill(); ctx.stroke();
 
                 ctx.font = '900 13px "Font Awesome 6 Free"';
                 ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                if (!isMobileDevice) { ctx.shadowBlur = 0; }
                 ctx.fillText(icon, 0, 0);
                 ctx.restore();
             }
         }
 
         let player = new Player();
-        // 效能優化：手機裝置只生成 40 顆星星背景
-        let maxStars = isMobileDevice ? 40 : 90;
+        let maxStars = isMobileDevice ? 30 : 80; // 降低手機端星星總數
         let backgroundStars = Array.from({length: maxStars}, () => new Star());
         let asteroids = [];
         let crystals = [];
@@ -729,24 +736,21 @@
             player.targetX = e.clientX - rect.left; player.targetY = e.clientY - rect.top;
         });
 
-        const joystickZone = document.getElementById('joystick-zone');
-        let touchStartX, touchStartY, playerStartTargetX, playerStartTargetY;
-        window.addEventListener('touchstart', function detectTouch() { joystickZone.style.display = 'block'; window.removeEventListener('touchstart', detectTouch); }, { once: true });
-        joystickZone.addEventListener('touchstart', (e) => {
-            if (!isPlaying || isPaused) return; e.preventDefault();
-            const touch = e.touches[0]; touchStartX = touch.clientX; touchStartY = touch.clientY;
-            playerStartTargetX = player.targetX; playerStartTargetY = player.targetY;
-        }, { passive: false });
-        joystickZone.addEventListener('touchmove', (e) => {
-            if (!isPlaying || isPaused) return; e.preventDefault();
+        // 修正：將操控權重直接綁定在 canvas 整體畫布，實現跨圖層絕對不卡死、直接跟隨
+        canvas.addEventListener('touchstart', handleTouch, { passive: false });
+        canvas.addEventListener('touchmove', handleTouch, { passive: false });
+
+        function handleTouch(e) {
+            if (!isPlaying || isPaused) return;
+            e.preventDefault(); // 阻止頁面滾動與縮放
+            const rect = canvas.getBoundingClientRect();
             const touch = e.touches[0];
-            player.targetX = playerStartTargetX + (touch.clientX - touchStartX) * 1.5;
-            player.targetY = playerStartTargetY + (touch.clientY - touchStartY) * 1.5;
-        }, { passive: false });
+            player.targetX = touch.clientX - rect.left;
+            player.targetY = touch.clientY - rect.top;
+        }
 
         function createParticles(x, y, color, isExplosion, count) {
-            // 效能優化：手機端將大爆炸粒子數量減半
-            let finalCount = isMobileDevice ? Math.floor(count * 0.5) : count;
+            let finalCount = isMobileDevice ? Math.floor(count * 0.4) : count;
             for (let i = 0; i < finalCount; i++) particles.push(new Particle(x, y, color, isExplosion));
         }
 
@@ -839,8 +843,8 @@
                 for (let j = asteroids.length - 1; j >= 0; j--) {
                     let a = asteroids[j];
                     if (checkCollision(p, a)) {
-                        createParticles(a.x, a.y, '#5c6066', true, 12);
-                        createParticles(p.x, p.y, '#ff1744', true, 4);
+                        createParticles(a.x, a.y, '#5c6066', true, 10);
+                        createParticles(p.x, p.y, '#ff1744', true, 3);
                         SFX.hit();
                         
                         let shootEarn = playerUpgrades.equippedSkin === 'red' ? 6 : 5;
@@ -866,12 +870,12 @@
                     if (player.buffs.shield > 0) {
                         player.buffs.shield = 0;
                         updateBuffUI();
-                        createParticles(ast.x, ast.y, '#00e5ff', true, 20);
+                        createParticles(ast.x, ast.y, '#00e5ff', true, 18);
                         SFX.hit();
                         triggerScreenShake(10);
                     } else {
-                        createParticles(player.x, player.y, '#b388ff', true, 16);
-                        createParticles(ast.x, ast.y, '#5c6066', true, 16);
+                        createParticles(player.x, player.y, '#b388ff', true, 12);
+                        createParticles(ast.x, ast.y, '#5c6066', true, 12);
                         
                         let dmg = playerUpgrades.equippedSkin === 'red' ? 20 : 30;
                         energy -= dmg;
@@ -890,7 +894,7 @@
                 cry.update(player.x, player.y, player.buffs.magnet > 0);
                 if (checkCollision(player, cry)) {
                     let isSpecial = cry.type === 'special';
-                    createParticles(cry.x, cry.y, isSpecial ? '#ff3b30' : '#ffd700', false, 10);
+                    createParticles(cry.x, cry.y, isSpecial ? '#ff3b30' : '#ffd700', false, 8);
                     
                     let baseEarn = isSpecial ? 50 : 10;
                     let earned = playerUpgrades.equippedSkin === 'red' ? Math.floor(baseEarn * 1.2) : baseEarn;
@@ -913,12 +917,12 @@
             for (let i = powerups.length - 1; i >= 0; i--) {
                 let pu = powerups[i]; pu.update();
                 if (checkCollision(player, pu)) {
-                    createParticles(pu.x, pu.y, '#ffffff', true, 15);
+                    createParticles(pu.x, pu.y, '#ffffff', true, 12);
                     SFX.pickupItem();
                     
                     if (pu.type === 'bomb') {
                         asteroids.forEach(a => {
-                            createParticles(a.x, a.y, '#5c6066', true, 12);
+                            createParticles(a.x, a.y, '#5c6066', true, 10);
                             a.markedForDeletion = true;
                             let bombEarn = playerUpgrades.equippedSkin === 'red' ? 6 : 5;
                             score += bombEarn; 
@@ -926,7 +930,7 @@
                             crystalsEarnedThisRound += bombEarn;
                         });
                         SFX.explosion();
-                        triggerScreenShake(25);
+                        triggerScreenShake(20);
                         updateUI();
                         checkLevelWin();
                     } else {
@@ -954,11 +958,15 @@
         }
 
         function draw() {
+            // 核心優化：每一幀強制關閉陰影渲染，防堵手機端效能漏洞
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = "transparent";
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             ctx.save();
             if (screenShakeFrames > 0) {
-                const intensity = Math.min(screenShakeFrames, 8);
+                const intensity = Math.min(screenShakeFrames, 6);
                 ctx.translate(random(-intensity, intensity), random(-intensity, intensity));
                 screenShakeFrames--;
             }
@@ -1024,8 +1032,8 @@
             document.getElementById('game-over-screen').classList.remove('hidden');
             
             const expColor = playerUpgrades.equippedSkin === 'red' ? '#ff3b30' : '#b388ff';
-            createParticles(player.x, player.y, expColor, true, 40);
-            createParticles(player.x, player.y, '#ffffff', true, 40);
+            createParticles(player.x, player.y, expColor, true, 30);
+            createParticles(player.x, player.y, '#ffffff', true, 30);
             SFX.explosion(); triggerScreenShake(20); draw();
             saveGame();
         }
@@ -1038,8 +1046,8 @@
             document.getElementById('win-end-wallet').innerText = totalCrystals;
             document.getElementById('game-win-screen').classList.remove('hidden');
             
-            createParticles(player.x, player.y, '#34c759', true, 50);
-            createParticles(player.x, player.y, '#ffd700', true, 50);
+            createParticles(player.x, player.y, '#34c759', true, 40);
+            createParticles(player.x, player.y, '#ffd700', true, 40);
             SFX.pickupSpecial(); SFX.pickupSpecial(); draw();
             saveGame();
         }
